@@ -1,11 +1,15 @@
 import logo from './logo.svg';
 import './App.css';
+import Heading from './Heading';
 
-function Header() {
-  return <h1>Welcome to My React App</h1>;
-}
 function App() {
- return <Header />; 
+ return (
+   <div className="App">
+      <header className="App-header">
+       <Heading name="Shaheer Muzaffar" />
+       <Heading name="Shaheer" />
+      </header>
+   </div>
+ );
 }
-
 export default App;
