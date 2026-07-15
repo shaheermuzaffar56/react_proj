@@ -1,5 +1,5 @@
 // src/routes/AppRouter.jsx
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route,} from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { ROUTES } from "../constants/routes";
 import MainLayout from "../components/MainLayout";
@@ -10,8 +10,8 @@ const TweetDetailPreview = lazy(() => import("../pages/TweetDetailPreview"));
 
 // Temporary placeholders — replaced in later steps
 const Home = () => <div>Home / Feed placeholder</div>;
-const Login = () => <div>Login placeholder</div>;
-const Register = () => <div>Register placeholder</div>;
+const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"));
+const RegisterPage = lazy(() => import("../features/auth/pages/RegisterPage"));
 const MyTweets = () => <div>My Tweets placeholder (protected)</div>;
 const Profile = () => <div>Profile placeholder (protected)</div>;
 const NotFound = () => <div>404 — Page not found</div>;
@@ -32,8 +32,8 @@ function AppRouter() {
           </Route>
         </Route>
 
-        <Route path={ROUTES.LOGIN} element={<Login />} />
-        <Route path={ROUTES.REGISTER} element={<Register />} />
+        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+        <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
 
         <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
       </Routes>

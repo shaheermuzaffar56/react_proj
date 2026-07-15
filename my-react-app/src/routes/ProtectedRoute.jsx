@@ -1,14 +1,17 @@
 // src/routes/ProtectedRoute.jsx
 import { Navigate, Outlet } from "react-router-dom";
-import { getAccessToken } from "../utils/tokenStorage";
+import { useAuth } from "../features/auth/hooks/useAuth";
 import { ROUTES } from "../constants/routes";
 
 function ProtectedRoute() {
-  const token = getAccessToken();
+  const { isAuthenticated, isLoading } = useAuth();
 
-  // Token presence only — real validity is enforced by the axios 401
-  // interceptor from Step 3. Role checks come in Step 5 once AuthContext exists.
-  if (!token) {
+  // Still checking for an existing session (page refresh) — don't redirect yet
+  if (isLoading) {
+    return <div>Loading session...</div>;
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
