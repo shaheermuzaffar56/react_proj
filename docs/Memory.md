@@ -58,17 +58,25 @@ Phase 4 scope is routing _mechanics_, not page content — page content belongs 
 
 ---
 
+### Phase 6 — Tweet CRUD (My Tweets) ✅ Complete
+
+- `features/tweets/services/tweetService.js` — `createTweet`, `getMyTweets`, `updateTweet`, `deleteTweet`, all via the shared `api` instance (no raw Axios, per `Rules.md`)
+- `features/tweets/hooks/useTweets.js` — owns `tweets`, `isLoading`, `error` state; exposes `refetch`, `create`, `update`, `remove`; errors extracted via `error.response?.data?.message` with generic fallback, per `Rules.md`'s error-handling rule
+- `features/tweets/components/TweetCard.jsx` / `TweetList.jsx` — reusable display components (built generic on purpose — reused as-is in Phase 7's public feed); `TweetList` handles all three required states explicitly (loading spinner, error `Alert`, empty-state message)
+- `features/tweets/components/TweetForm.jsx` — single shared RHF + Zod form for both create and edit mode (switches on presence of `tweet` prop); `tags` submitted as one comma-separated string per confirmed Swagger spec (not `tags[]` — corrected after checking real API docs); `isSensitive` deliberately **not** added — out of Phase 6's documented scope (PRD §2.2 lists only title/description/image/tags), revisit at Phase 10 (Moderation) when it becomes functionally meaningful
+- `features/tweets/components/DeleteTweetDialog.jsx` — confirmation dialog, cancel/confirm both tested
+- `features/tweets/pages/MyTweetsPage.jsx` — wires everything together; create/edit use a MUI `Dialog` (modal), not a separate route — no `/tweets/new` or `/tweets/:id/edit` route was added, consistent with `Architecture.md`'s documented routing tree
+- `routes/AppRouter.jsx` — `MyTweets` placeholder replaced with real `lazy()` import of `MyTweetsPage`
+
+**Verified via live end-to-end testing, not just code review:** login → session tokens confirmed in localStorage → page load (loading → empty state) → create (201, list updates without refresh) → edit (200, pre-filled form, card updates without refresh) → delete (cancel leaves tweet untouched; confirm removes it without refresh). All working against the real backend, not mocked.
+
 ## 2. What File Is Currently Being Worked On
 
-**None actively in progress.** Phases 1–5 confirmed complete against the actual repo.
+**None actively in progress.** Phases 1–6 confirmed complete against the actual repo, including live testing.
 
-**Next real work — Phase 6 (Tweet CRUD — My Tweets):**
+**Next real work — Phase 7 (Public Tweet Feed):**
 
-1. Fill in `features/tweets/services/tweetService.js` — `createTweet`, `getMyTweets`, `updateTweet`, `deleteTweet`
-2. Build a `useTweets` (or similarly scoped) custom hook per `Rules.md` — components must not call `tweetService` directly
-3. Build reusable `TweetCard` / `TweetList` components (these get reused again in Phase 7's public feed)
-4. Create/edit tweet forms with RHF + Zod, including image upload via `FormData` (title, description, optional image, tags)
-5. Delete flow with confirmation dialog
+Reuse `TweetCard`/`TweetList` from Phase 6 for the public feed using `getAllTweets`. Add pagination, search, filter by status/author, and sort.
 
 ---
 
@@ -95,6 +103,10 @@ Updated the status of Phase 3 (API Layer) from **Partially Complete** to **Compl
 Completed Phase 5 (Authentication) in full: `authService.js`, `AuthContext`, `useAuth`, real `LoginPage`/`RegisterPage`, Logout wiring, and `ProtectedRoute` upgraded from token-presence to real `isAuthenticated`/`isLoading` state. Verified via direct file inspection that `App.css`/`index.css` were already correctly imported — the unstyled appearance during Phases 4–5 is expected, not a missing-import bug; real theming is pending Phase 6.
 
 ---
+
+### Session 6
+
+Completed Phase 6 (Tweet CRUD — My Tweets) in full: `tweetService.js`, `useTweets` hook, `TweetCard`/`TweetList`, `TweetForm` (create + edit, one shared component), `DeleteTweetDialog`, and `MyTweetsPage` wiring it all together via a modal (not a separate route). Corrected the `tags` field format after checking the real Swagger spec — it's a single comma-separated string, not `tags[]` as first assumed; caught before it caused a silent backend mismatch. Deliberately left `isSensitive` out — checked against `Phases.md`/`PRD.md` first and confirmed it's out of Phase 6's documented scope. All 6 CRUD flows (boot, auth, list render, create, edit, delete) tested live against the real backend, not just written and assumed working.
 
 ### Next Update
 

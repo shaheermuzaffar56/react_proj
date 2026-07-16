@@ -12,7 +12,7 @@ const TweetDetailPreview = lazy(() => import("../pages/TweetDetailPreview"));
 const Home = () => <div>Home / Feed placeholder</div>;
 const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"));
 const RegisterPage = lazy(() => import("../features/auth/pages/RegisterPage"));
-const MyTweets = () => <div>My Tweets placeholder (protected)</div>;
+const MyTweets = lazy(() => import("../features/tweets/pages/MyTweetsPage"));
 const Profile = () => <div>Profile placeholder (protected)</div>;
 const NotFound = () => <div>404 — Page not found</div>;
 
