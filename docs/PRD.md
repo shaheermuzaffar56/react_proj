@@ -32,7 +32,7 @@ This is a learning project: every feature maps to a specific React concept from 
 
 ### 2.3 Tweets — Public Feed
 
-- Browse published tweets (paginated)
+- Browse published tweets (infinite scroll — no page-number pagination)
 - Search tweets (title/description/tags)
 - Filter by status, author
 - Sort (newest, oldest, title, likes)

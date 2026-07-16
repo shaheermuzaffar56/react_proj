@@ -38,7 +38,7 @@ Build complete Create, Read, Update, and Delete functionality for the user's own
 
 ## Phase 7 – Public Tweet Feed
 
-Reuse the TweetCard and TweetList components from Phase 6 for the public feed using the getAllTweets API. Add pagination, searching, filtering by status or author, and sorting.
+Reuse the TweetCard and TweetList components from Phase 6 for the public feed using the getAllTweets API. Add infinite scroll (no page-number pagination — load more tweets automatically as the user scrolls, using the getAllTweets API's `page`/`limit` params under the hood as an incrementing cursor), searching, filtering by status or author, and sorting.
 
 ---
 

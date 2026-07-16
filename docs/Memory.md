@@ -76,7 +76,7 @@ Phase 4 scope is routing _mechanics_, not page content — page content belongs 
 
 **Next real work — Phase 7 (Public Tweet Feed):**
 
-Reuse `TweetCard`/`TweetList` from Phase 6 for the public feed using `getAllTweets`. Add pagination, search, filter by status/author, and sort.
+Reuse `TweetCard`/`TweetList` from Phase 6 for the public feed using `getAllTweets`. Add infinite scroll (no page-number pagination), search, filter by status/author, and sort. (Scope updated after Session 6 — infinite scroll replaces pagination per explicit decision, not the original plan.)
 
 ---
 
