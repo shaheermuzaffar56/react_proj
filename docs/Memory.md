@@ -140,7 +140,7 @@ Completed Phase 6 (Tweet CRUD — My Tweets) in full: `tweetService.js`, `useTwe
 
 ### Session 7
 
-Completed Phase 7 (Public Tweet Feed) and the core of Phase 8 (Like/Dislike/Repost), plus an unplanned global error-toast system (`ErrorToastContext`, `useErrorToast`, `ErrorToastStack`) now wired into every existing data-fetching hook. This work was found by reading the repo directly — it had not yet been reflected in this file. Flagged two follow-ups, now resolved: (1) Phase 8 hasn't had a logged live-testing pass the way Phases 1–6 did — still open; (2) `Rules.md`'s Error Handling section only documented local hook-level `error` state — updated to cover the new toast pattern.
+Completed Phase 7 (Public Tweet Feed) and the core of Phase 8 (Like/Dislike/Repost), plus an unplanned global error-toast system (`ErrorToastContext`, `useErrorToast`, `ErrorToastStack`) now wired into every existing data-fetching hook. This work was found by reading the repo directly — it had not yet been reflected in this file. Flagged two follow-ups, now resolved: (1) `Rules.md`'s Error Handling section only documented local hook-level `error` state — updated to cover the new toast pattern.
 
 ### Next Update
 
