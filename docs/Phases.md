@@ -44,13 +44,13 @@ Reuse the TweetCard and TweetList components from Phase 6 for the public feed us
 
 ## Phase 8 – Like / Dislike / Repost
 
-Implement Like, Dislike, and Repost functionality with optimistic UI updates. Also display lists of users who liked, disliked, or reposted each tweet.
+Implement Like, Dislike, and Repost functionality with optimistic UI updates. Also display lists of users who liked, disliked, or reposted each tweet, using infinite scroll (no page-number pagination) via the `/tweet/{id}/likes`, `/dislikes`, and `/reposts` endpoints' `page`/`limit` params.
 
 ---
 
 ## Phase 9 – User Profile
 
-Allow users to view and edit their own profiles, upload profile and cover images, view other users by ID, browse all users, and delete their own accounts.
+Allow users to view and edit their own profiles, upload profile and cover images, view other users by ID, browse all users (infinite scroll — no page-number pagination, via the `allUsers` API's `page`/`limit` params), and delete their own accounts.
 
 ---
 

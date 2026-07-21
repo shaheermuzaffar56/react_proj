@@ -43,7 +43,7 @@ This is a learning project: every feature maps to a specific React concept from 
 - Like / unlike (toggle)
 - Dislike / undislike (toggle)
 - Repost / un-repost (toggle)
-- View who liked / disliked / reposted a tweet
+- View who liked / disliked / reposted a tweet (infinite scroll — no page-number pagination)
 
 ### 2.5 User Profile
 
@@ -53,12 +53,12 @@ This is a learning project: every feature maps to a specific React concept from 
 - Update cover image
 - Delete own account
 - View another user's profile by ID
-- Browse all users (paginated) — general listing
+- Browse all users (infinite scroll — no page-number pagination) — general listing
 
 ### 2.6 Moderation (role-gated: moderator/admin only)
 
-- Tweet moderation queue (approve/reject/publish workflow)
-- User moderation queue (role assignment, disable/enable accounts)
+- Tweet moderation queue (approve/reject/publish workflow, infinite scroll — no page-number pagination)
+- User moderation queue (role assignment, disable/enable accounts, infinite scroll — no page-number pagination)
 - Admin-only actions: delete any user, assign roles
 - Moderator-limited actions: cannot see admin accounts/tweets, cannot assign roles
 

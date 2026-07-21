@@ -25,3 +25,27 @@ export const updateTweet = (id, data) => {
 export const deleteTweet = (id) => {
   return api.delete(`/tweet/deleteTweet/${id}`);
 };
+
+// GET /tweet/getAllTweets — public, paginated, filterable
+// params: { page, limit, status, author, search, sortBy }
+export const getAllTweets = (params = {}) => {
+  return api.get("/tweet/getAllTweets", { params });
+};
+
+// POST /tweet/likeTweet/:id — toggles like; also clears dislike if present
+export const likeTweet = (id) => api.post(`/tweet/likeTweet/${id}`);
+
+// POST /tweet/dislikeTweet/:id — toggles dislike; also clears like if present
+export const dislikeTweet = (id) => api.post(`/tweet/dislikeTweet/${id}`);
+
+// POST /tweet/repostTweet/:id — toggles repost
+export const repostTweet = (id) => api.post(`/tweet/repostTweet/${id}`);
+
+// GET /tweet/:id/likes — public, paginated (consumed via infinite scroll per Rules.md)
+export const getTweetLikes = (id, params = {}) => api.get(`/tweet/${id}/likes`, { params });
+
+// GET /tweet/:id/dislikes — public, paginated (infinite scroll)
+export const getTweetDislikes = (id, params = {}) => api.get(`/tweet/${id}/dislikes`, { params });
+
+// GET /tweet/:id/reposts — public, paginated (infinite scroll)
+export const getTweetReposts = (id, params = {}) => api.get(`/tweet/${id}/reposts`, { params });

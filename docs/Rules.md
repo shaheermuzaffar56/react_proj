@@ -38,6 +38,10 @@ Use `React.lazy()` together with `Suspense` for lazy-loaded pages, following the
 
 Use `FormData` with the `multipart/form-data` content type for all file uploads (avatars, cover images, and tweet images), matching the Swagger API requirements. |
 
+### Paginated Endpoints — Always Infinite Scroll
+
+Every backend endpoint that returns a `pagination` object (`getAllTweets`, `getMyTweets`, `allUsers`, `/tweet/{id}/likes`, `/dislikes`, `/reposts`, `/tweet/moderate`, `/user/moderate`) must be consumed via **infinite scroll** on the frontend — accumulate results page-by-page as the user scrolls, using an `IntersectionObserver` sentinel (see `useTweetFeed.js` / `FeedPage.jsx` from Phase 7 as the reference pattern). **Never build page-number UI** (Prev/Next buttons, numbered page links) anywhere in this app, even though the backend's `page`/`limit` query params are used internally to drive it. This applies project-wide, not just to the public feed — decided explicitly in Session 6, confirmed to also apply to Phase 8's like/dislike/repost user lists and Phase 9's all-users listing.
+
 ## 2. What to Avoid
 
 - ❌ **Fetch API** — project standardized on Axios from Step 3 onward; don't mix the two.

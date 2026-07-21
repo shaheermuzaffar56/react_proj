@@ -94,6 +94,8 @@ Query: - page - limit - status - author - search - sortBy
 
 Returns: - tweets\[\] - pagination
 
+> Frontend note: `page`/`limit` are consumed as an incrementing cursor for infinite scroll — no page-number UI. See Rules.md.
+
 ---
 
 ## Get Tweet By ID
@@ -164,6 +166,8 @@ Admin/Moderator only.
 
 Supports filtering, search and pagination.
 
+> Frontend note: consumed via infinite scroll — no page-number UI. See Rules.md.
+
 ---
 
 ## Tweet Reactions
@@ -172,7 +176,7 @@ Supports filtering, search and pagination.
 - `GET /tweet/{id}/dislikes`
 - `GET /tweet/{id}/reposts`
 
-All return paginated user lists.
+All return paginated user lists — consumed via infinite scroll on the frontend, no page-number UI. See Rules.md.
 
 ---
 
@@ -183,7 +187,7 @@ All return paginated user lists.
 - `PATCH /user/updateAvatar`
 - `PATCH /user/updateCover`
 - `GET /user/{id}`
-- `GET /user/allUsers`
+- `GET /user/allUsers` (infinite scroll on frontend, no page-number UI)
 - `GET /user/channel/{username}`
 - `DELETE /user/deleteUser`
 - `DELETE /user/deleteUser/{id}` (Admin)
