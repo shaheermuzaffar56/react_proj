@@ -70,13 +70,43 @@ Phase 4 scope is routing _mechanics_, not page content — page content belongs 
 
 **Verified via live end-to-end testing, not just code review:** login → session tokens confirmed in localStorage → page load (loading → empty state) → create (201, list updates without refresh) → edit (200, pre-filled form, card updates without refresh) → delete (cancel leaves tweet untouched; confirm removes it without refresh). All working against the real backend, not mocked.
 
+### Phase 7 — Public Tweet Feed ✅ Complete
+
+- `features/tweets/hooks/useTweetFeed.js` — infinite-scroll variant of the tweets hook; owns `tweets`, `page`, `totalPages`, `isLoading`, `error`; accepts `{ search, status, sortBy }` and refetches from page 1 (`replace: true`) whenever those change; `isFetchingRef` guards against duplicate concurrent fetches
+- `features/tweets/pages/FeedPage.jsx` — search field, status filter, sort dropdown, and an `IntersectionObserver` sentinel that calls `loadMore()` when scrolled into view; reuses `TweetList`/`TweetCard` unchanged from Phase 6, per the original plan
+- `constants/routes.js` — added `ROUTES.FEED` (`/feed`)
+- `routes/AppRouter.jsx` — `ROUTES.HOME` and `ROUTES.FEED` both render `FeedPage` (Home placeholder from Phase 4 is gone); `FeedPage` import switched from an inline placeholder to a real `lazy()` import
+
+### Phase 8 — Like / Dislike / Repost ⚠️ Core complete, not yet live-tested
+
+- `features/tweets/services/tweetService.js` — added `likeTweet`, `dislikeTweet`, `repostTweet`, `getTweetLikes`, `getTweetDislikes`, `getTweetReposts`
+- `features/tweets/hooks/useTweetInteractions.js` — optimistic toggle logic for like/dislike/repost; like and dislike are mutually exclusive (toggling one clears the other optimistically, then reconciles with the server response); rolls back local state on request failure
+- `features/tweets/hooks/useReactorsList.js` — generic infinite-scroll hook for the three reactor-list endpoints, parameterized by `fetchFn`
+- `features/tweets/components/TweetReactorsList.jsx` — dialog + `IntersectionObserver` sentinel, reused for likes/dislikes/reposts via a `listConfig` map
+- `features/tweets/components/TweetCard.jsx` — wired to `useTweetInteractions`; like/dislike/repost buttons plus tappable counts that open `TweetReactorsList`
+
+**Not yet verified live against the real backend** — Phase 6 and earlier phases in this doc were confirmed via live testing before being marked complete; Phase 7 and 8 have not had that same live-testing confirmation logged yet. Recommend a testing pass before treating this as fully closed, consistent with this doc's own stated practice.
+
+### Undocumented addition — Global Error Toast System ✅ Complete, not part of any planned phase
+
+Not called for by `Phases.md`, but built and already wired project-wide:
+
+- `context/ErrorToastContextValue.js` / `context/ErrorToastContext.jsx` — `ErrorToastProvider` holds a `toasts` array; `showError(err, title)` extracts `err.response?.data?.message`, pushes a toast, auto-dismisses after 6s
+- `hooks/useErrorToast.js` — throws if used outside `ErrorToastProvider`, same pattern as `useAuth`
+- `components/ErrorToastStack.jsx` — renders stacked MUI `Alert`s, fixed top-center
+- `main.jsx` — `ErrorToastProvider` now wraps `AuthProvider` (provider order: Router → ErrorToast → Auth → App)
+- `App.jsx` — renders `<ErrorToastStack />` alongside `<AppRouter />`
+- Every data-fetching hook built so far (`useTweets`, `useTweetFeed`, `useTweetInteractions`, `useReactorsList`) now calls `showError()` in its `catch` block **in addition to** setting local `error` state
+
+This changes the project's error-handling pattern from what `Rules.md` documents (hook-level `error` state only) to a dual pattern (local `error` state + global toast). `Rules.md` has been updated to reflect this as the new standard — see its Error Handling section.
+
 ## 2. What File Is Currently Being Worked On
 
-**None actively in progress.** Phases 1–6 confirmed complete against the actual repo, including live testing.
+**None actively in progress.** Phases 1–7 confirmed complete against the actual repo. Phase 8's core interaction/reactor-list logic is also in place but hasn't had the same live end-to-end testing pass logged for it yet — verify before treating it as fully closed.
 
-**Next real work — Phase 7 (Public Tweet Feed):**
+**Next real work — Phase 9 (User Profile):**
 
-Reuse `TweetCard`/`TweetList` from Phase 6 for the public feed using `getAllTweets`. Add infinite scroll (no page-number pagination), search, filter by status/author, and sort. (Scope updated after Session 6 — infinite scroll replaces pagination per explicit decision, not the original plan.)
+`features/users/services/userService.js` is still empty (correctly, per this doc's Phase 3 note — deferred to Phase 9). View/edit own profile, avatar/cover upload, view another user by ID, browse all users via infinite scroll (consistent with the Phase 7/8 pattern already established), delete own account.
 
 ---
 
@@ -108,6 +138,10 @@ Completed Phase 5 (Authentication) in full: `authService.js`, `AuthContext`, `us
 
 Completed Phase 6 (Tweet CRUD — My Tweets) in full: `tweetService.js`, `useTweets` hook, `TweetCard`/`TweetList`, `TweetForm` (create + edit, one shared component), `DeleteTweetDialog`, and `MyTweetsPage` wiring it all together via a modal (not a separate route). Corrected the `tags` field format after checking the real Swagger spec — it's a single comma-separated string, not `tags[]` as first assumed; caught before it caused a silent backend mismatch. Deliberately left `isSensitive` out — checked against `Phases.md`/`PRD.md` first and confirmed it's out of Phase 6's documented scope. All 6 CRUD flows (boot, auth, list render, create, edit, delete) tested live against the real backend, not just written and assumed working.
 
+### Session 7
+
+Completed Phase 7 (Public Tweet Feed) and the core of Phase 8 (Like/Dislike/Repost), plus an unplanned global error-toast system (`ErrorToastContext`, `useErrorToast`, `ErrorToastStack`) now wired into every existing data-fetching hook. This work was found by reading the repo directly — it had not yet been reflected in this file. Flagged two follow-ups, now resolved: (1) Phase 8 hasn't had a logged live-testing pass the way Phases 1–6 did — still open; (2) `Rules.md`'s Error Handling section only documented local hook-level `error` state — updated to cover the new toast pattern.
+
 ### Next Update
 
 _Add the next development milestone here._
@@ -117,3 +151,4 @@ _Add the next development milestone here._
 1. Phase 3 was marked done in Notion while its `services/*.js` files were still empty — those files are actually out of scope for Phase 3 (they belong to Phase 5+), so "empty" there isn't a bug, just early scaffolding.
 2. Phase 4 was initially assumed incomplete because pages were placeholders — but placeholder page _content_ is expected at this stage; Phase 4's real scope (routing mechanics) was fully done. Don't confuse "placeholder UI" with "incomplete phase" — check each phase's actual scope in `Phases.md` before judging completion.
 3. An "unstyled" look isn't automatically a missing-CSS-import bug — check the actual CSS file contents (are the class names even used anywhere?) before assuming imports are the problem.
+4. Code can outrun documentation entirely — Phases 7 and 8 plus a whole undocumented error-toast system existed in the repo before this file was updated to reflect them. Periodically diff `src/` against `docs/` directly rather than only updating docs when told a phase is starting.
