@@ -1,11 +1,9 @@
 // src/features/tweets/hooks/useReactorsList.js
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useErrorToast } from "../../../hooks/useErrorToast";
 
 const PAGE_SIZE = 10;
 
-// fetchFn: one of getTweetLikes / getTweetDislikes / getTweetReposts from tweetService
-// Generic so all three reactor lists share one hook, following the same infinite-scroll
-// pattern as useTweetFeed.js (Phase 7) — per Rules.md's "always infinite scroll" rule.
 export function useReactorsList(fetchFn, tweetId, enabled) {
   const [users, setUsers] = useState([]);
   const [page, setPage] = useState(1);
@@ -13,6 +11,7 @@ export function useReactorsList(fetchFn, tweetId, enabled) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const isFetchingRef = useRef(false);
+  const { showError } = useErrorToast();
 
   const fetchPage = useCallback(
     async (pageToFetch) => {
@@ -28,15 +27,15 @@ export function useReactorsList(fetchFn, tweetId, enabled) {
         setPage(pageToFetch);
       } catch (err) {
         setError(err.response?.data?.message || "Couldn't load list. Please try again.");
+        showError(err, "Couldn't load list");
       } finally {
         setIsLoading(false);
         isFetchingRef.current = false;
       }
     },
-    [fetchFn, tweetId]
+    [fetchFn, tweetId, showError]
   );
 
-  // Only fetch once the dialog is actually open (enabled=true) — no point fetching in the background
   useEffect(() => {
     if (enabled) {
       setUsers([]);

@@ -1,8 +1,8 @@
 // src/features/tweets/hooks/useTweetInteractions.js
 import { useState } from "react";
 import { likeTweet, dislikeTweet, repostTweet } from "../services/tweetService";
+import { useErrorToast } from "../../../hooks/useErrorToast";
 
-// tweet: the full tweet object (needs isLiked, isDisliked, isRetweeted, likesCount, dislikesCount, repostsCount)
 export function useTweetInteractions(tweet) {
   const [state, setState] = useState({
     isLiked: tweet.isLiked,
@@ -13,10 +13,10 @@ export function useTweetInteractions(tweet) {
     repostsCount: tweet.repostsCount,
   });
   const [error, setError] = useState(null);
+  const { showError } = useErrorToast();
 
   const toggleLike = async () => {
-    const previous = state; // snapshot for rollback
-    // Optimistic guess: flip isLiked, adjust counts, and clear dislike if it was active
+    const previous = state;
     setState((s) => ({
       ...s,
       isLiked: !s.isLiked,
@@ -30,8 +30,9 @@ export function useTweetInteractions(tweet) {
       const { isLiked, likesCount, dislikesCount } = res.data.data;
       setState((s) => ({ ...s, isLiked, likesCount, dislikesCount }));
     } catch (err) {
-      setState(previous); // roll back on failure
+      setState(previous);
       setError(err.response?.data?.message || "Couldn't update like. Please try again.");
+      showError(err, "Couldn't update like");
     }
   };
 
@@ -52,6 +53,7 @@ export function useTweetInteractions(tweet) {
     } catch (err) {
       setState(previous);
       setError(err.response?.data?.message || "Couldn't update dislike. Please try again.");
+      showError(err, "Couldn't update dislike");
     }
   };
 
@@ -70,6 +72,7 @@ export function useTweetInteractions(tweet) {
     } catch (err) {
       setState(previous);
       setError(err.response?.data?.message || "Couldn't update repost. Please try again.");
+      showError(err, "Couldn't update repost");
     }
   };
 

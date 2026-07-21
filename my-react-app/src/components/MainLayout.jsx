@@ -1,29 +1,24 @@
 // src/components/MainLayout.jsx
-import { Outlet, useNavigate } from "react-router-dom";
-import { Button } from "@mui/material";
-import { useAuth } from "../features/auth/hooks/useAuth";
-import { ROUTES } from "../constants/routes";
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
+import { Box } from "@mui/material";
+import TopBar from "./TopBar";
+import Sidebar from "./Sidebar";
 
 function MainLayout() {
-  const { isAuthenticated, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate(ROUTES.LOGIN);
-  };
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div>
-      <header style={{ padding: "1rem", borderBottom: "1px solid #ccc", display: "flex", justifyContent: "space-between" }}>
-        <nav>CloudLearner — Nav placeholder</nav>
-        {isAuthenticated && <Button onClick={handleLogout}>Logout</Button>}
-      </header>
+    <Box sx={{ display: "flex" }}>
+      <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
-      <main>
-        <Outlet />
-      </main>
-    </div>
+      <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+        <TopBar onMenuClick={() => setMobileOpen(true)} />
+        <Box component="main" sx={{ p: 2 }}>
+          <Outlet />
+        </Box>
+      </Box>
+    </Box>
   );
 }
 

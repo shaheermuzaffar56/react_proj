@@ -6,8 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { TextField, Button, Box, Alert, Typography } from "@mui/material";
 import { registerUser } from "../services/authService";
-import { setTokens } from "../../../utils/tokenStorage";
 import { useAuth } from "../hooks/useAuth";
+import { useErrorToast } from "../../../hooks/useErrorToast";
 import { ROUTES } from "../../../constants/routes";
 
 const WEBP_TYPE = "image/webp";
@@ -29,7 +29,8 @@ const registerSchema = z.object({
 
 function RegisterPage() {
   const navigate = useNavigate();
-  const { user } = useAuth(); // used later once we add role-aware redirect logic
+  const { user } = useAuth();
+  const { showError } = useErrorToast();
   const [serverError, setServerError] = useState(null);
 
   const {
@@ -52,9 +53,10 @@ function RegisterPage() {
 
     try {
       await registerUser(formData);
-      navigate(ROUTES.LOGIN); // register doesn't return tokens — user logs in next
+      navigate(ROUTES.LOGIN);
     } catch (err) {
       setServerError(err.response?.data?.message || "Registration failed. Please try again.");
+      showError(err, "Registration failed");
     }
   };
 

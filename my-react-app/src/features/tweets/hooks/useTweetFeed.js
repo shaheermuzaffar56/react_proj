@@ -1,6 +1,7 @@
 // src/features/tweets/hooks/useTweetFeed.js
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getAllTweets } from "../services/tweetService";
+import { useErrorToast } from "../../../hooks/useErrorToast";
 
 const PAGE_SIZE = 10;
 
@@ -10,8 +11,8 @@ export function useTweetFeed({ search = "", status = "", sortBy = "-createdAt" }
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { showError } = useErrorToast();
 
-  // Prevents duplicate fetches from firing while one is already in flight
   const isFetchingRef = useRef(false);
 
   const getErrorMessage = (err) =>
@@ -37,15 +38,15 @@ export function useTweetFeed({ search = "", status = "", sortBy = "-createdAt" }
         setPage(pageToFetch);
       } catch (err) {
         setError(getErrorMessage(err));
+        showError(err, "Couldn't load the feed");
       } finally {
         setIsLoading(false);
         isFetchingRef.current = false;
       }
     },
-    [search, status, sortBy]
+    [search, status, sortBy, showError]
   );
 
-  // Whenever search/status/sortBy changes, start over from page 1
   useEffect(() => {
     fetchPage(1, true);
   }, [fetchPage]);

@@ -6,9 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { TextField, Button, Box, Alert } from "@mui/material";
 import { useAuth } from "../hooks/useAuth";
+import { useErrorToast } from "../../../hooks/useErrorToast";
 import { ROUTES } from "../../../constants/routes";
 
-// Zod schema: one "identifier" field (email OR username), split apart on submit
 const loginSchema = z.object({
   identifier: z.string().min(1, "Email or username is required"),
   password: z.string().min(1, "Password is required"),
@@ -17,6 +17,7 @@ const loginSchema = z.object({
 function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { showError } = useErrorToast();
   const [serverError, setServerError] = useState(null);
 
   const {
@@ -27,7 +28,6 @@ function LoginPage() {
 
   const onSubmit = async ({ identifier, password }) => {
     setServerError(null);
-    // Backend accepts either field — send as email if it looks like one, else userName
     const isEmail = identifier.includes("@");
     try {
       await login({
@@ -38,6 +38,7 @@ function LoginPage() {
       navigate(ROUTES.HOME);
     } catch (err) {
       setServerError(err.response?.data?.message || "Login failed. Please try again.");
+      showError(err, "Login failed");
     }
   };
 

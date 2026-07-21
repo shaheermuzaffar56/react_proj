@@ -6,13 +6,14 @@ import {
   updateTweet,
   deleteTweet,
 } from "../services/tweetService";
+import { useErrorToast } from "../../../hooks/useErrorToast";
 
 export function useTweets() {
   const [tweets, setTweets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { showError } = useErrorToast();
 
-  // Extracts a safe, user-facing message — never render raw backend error objects (Rules.md)
   const getErrorMessage = (err) =>
     err.response?.data?.message || "Something went wrong. Please try again.";
 
@@ -24,12 +25,12 @@ export function useTweets() {
       setTweets(res.data.data.tweets ?? res.data.data);
     } catch (err) {
       setError(getErrorMessage(err));
+      showError(err, "Couldn't load your tweets");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showError]);
 
-  // Load on mount
   useEffect(() => {
     fetchTweets();
   }, [fetchTweets]);
@@ -38,13 +39,14 @@ export function useTweets() {
     async (formData) => {
       try {
         await createTweet(formData);
-        await fetchTweets(); // keep list in sync
+        await fetchTweets();
       } catch (err) {
         setError(getErrorMessage(err));
-        throw err; // let the calling form know it failed, so it can stay open
+        showError(err, "Couldn't post tweet");
+        throw err;
       }
     },
-    [fetchTweets]
+    [fetchTweets, showError]
   );
 
   const update = useCallback(
@@ -54,10 +56,11 @@ export function useTweets() {
         await fetchTweets();
       } catch (err) {
         setError(getErrorMessage(err));
+        showError(err, "Couldn't update tweet");
         throw err;
       }
     },
-    [fetchTweets]
+    [fetchTweets, showError]
   );
 
   const remove = useCallback(
@@ -67,10 +70,11 @@ export function useTweets() {
         await fetchTweets();
       } catch (err) {
         setError(getErrorMessage(err));
+        showError(err, "Couldn't delete tweet");
         throw err;
       }
     },
-    [fetchTweets]
+    [fetchTweets, showError]
   );
 
   return { tweets, isLoading, error, refetch: fetchTweets, create, update, remove };

@@ -1,15 +1,13 @@
 // src/context/AuthContext.jsx
-import { createContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { getCurrentUser, loginUser, logoutUser } from "../features/auth/services/authService";
 import { getAccessToken, setTokens, clearTokens } from "../utils/tokenStorage";
-
-export const AuthContext = createContext(null);
+import { AuthContext } from "./AuthContextValue";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // true while we check for an existing session
+  const [isLoading, setIsLoading] = useState(true);
 
-  // On app load: if a token exists, fetch the real user and restore session
   useEffect(() => {
     const restoreSession = async () => {
       const token = getAccessToken();
@@ -21,7 +19,7 @@ export function AuthProvider({ children }) {
         const { data } = await getCurrentUser();
         setUser(data.data.userData);
       } catch {
-        clearTokens(); // token invalid/expired and refresh already failed
+        clearTokens();
       } finally {
         setIsLoading(false);
       }
