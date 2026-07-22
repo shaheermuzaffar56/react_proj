@@ -2,8 +2,10 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { TextField, Button, Box, Alert, Typography } from "@mui/material";
+import { TextField, Button, Box, Alert } from "@mui/material";
 import { useState } from "react";
+import UploadBox from "../../../components/UploadBox";
+import { useFilePreview } from "../../../hooks/useFilePreview";
 
 const WEBP_TYPE = "image/webp";
 
@@ -26,6 +28,7 @@ export default function TweetForm({ tweet, onSubmit, onDone }) {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(tweetSchema),
@@ -35,6 +38,8 @@ export default function TweetForm({ tweet, onSubmit, onDone }) {
       tags: tweet?.tags?.join(", ") ?? "",
     },
   });
+
+  const imagePreview = useFilePreview(watch("image")) ?? (isEditMode ? tweet?.image : null);
 
   const handleFormSubmit = async (values) => {
     setServerError(null);
@@ -73,11 +78,15 @@ export default function TweetForm({ tweet, onSubmit, onDone }) {
       <TextField label="Tags (comma-separated)" fullWidth margin="normal" {...register("tags")}
         error={!!errors.tags} helperText={errors.tags?.message} />
 
-      <Typography variant="body2" sx={{ mt: 2 }}>
-        Image (webp, optional{isEditMode ? " — leave blank to keep current" : ""})
-      </Typography>
-      <input type="file" accept="image/webp" {...register("image")} />
-      {errors.image && <Typography color="error" variant="caption">{errors.image.message}</Typography>}
+      <Box sx={{ mt: 2 }}>
+        <UploadBox
+          label={`Image${isEditMode ? " — leave blank to keep current" : ""}`}
+          height={140}
+          preview={imagePreview}
+          error={errors.image?.message}
+          inputProps={register("image")}
+        />
+      </Box>
 
       <Button type="submit" variant="contained" fullWidth disabled={isSubmitting} sx={{ mt: 3 }}>
         {isSubmitting ? "Saving..." : isEditMode ? "Update Tweet" : "Create Tweet"}

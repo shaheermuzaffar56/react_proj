@@ -11,6 +11,7 @@ import RepeatIcon from "@mui/icons-material/Repeat";
 import { useTweetInteractions } from "../hooks/useTweetInteractions";
 import TweetReactorsList from "./TweetReactorsList";
 import { getTweetLikes, getTweetDislikes, getTweetReposts } from "../services/tweetService";
+import { getStatusChipProps } from "../../../constants/tweetStatus";
 
 export default function TweetCard({ tweet, onEdit, onDelete }) {
   const { title, description, image, status, tags = [] } = tweet;
@@ -34,8 +35,8 @@ export default function TweetCard({ tweet, onEdit, onDelete }) {
       {image && <CardMedia component="img" height="180" image={image} alt={title} />}
       <CardContent>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-          <Typography variant="h6">{title}</Typography>
-          <Chip label={status} size="small" />
+          <Typography variant="subtitle1">{title}</Typography>
+          <Chip size="small" {...getStatusChipProps(status)} />
         </Stack>
 
         <Typography variant="body2" color="text.secondary" sx={{ my: 1 }}>

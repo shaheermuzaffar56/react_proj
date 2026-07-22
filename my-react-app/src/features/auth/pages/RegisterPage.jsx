@@ -4,11 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { TextField, Button, Box, Alert, Typography } from "@mui/material";
+import { Box, TextField, Button, Alert, Typography } from "@mui/material";
 import { registerUser } from "../services/authService";
-import { useAuth } from "../hooks/useAuth";
 import { useErrorToast } from "../../../hooks/useErrorToast";
 import { ROUTES } from "../../../constants/routes";
+import AuthLayout from "../components/AuthLayout";
+import UploadBox from "../../../components/UploadBox";
+import { useFilePreview } from "../../../hooks/useFilePreview";
 
 const WEBP_TYPE = "image/webp";
 
@@ -29,15 +31,18 @@ const registerSchema = z.object({
 
 function RegisterPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { showError } = useErrorToast();
   const [serverError, setServerError] = useState(null);
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({ resolver: zodResolver(registerSchema) });
+
+  const avatarPreview = useFilePreview(watch("avatar"));
+  const coverPreview = useFilePreview(watch("coverImage"));
 
   const onSubmit = async (formValues) => {
     setServerError(null);
@@ -61,30 +66,80 @@ function RegisterPage() {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ maxWidth: 360, mx: "auto", mt: 6 }}>
-      {serverError && <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>}
+    <AuthLayout title="Create your account" subtitle="Join CloudLearner and start sharing knowledge.">
+      <Box
+        component="form"
+        onSubmit={handleSubmit(onSubmit)}
+        sx={{ display: "flex", flexDirection: "column", gap: 1.75 }}
+      >
+        {serverError && <Alert severity="error">{serverError}</Alert>}
 
-      <TextField label="Username" fullWidth margin="normal" {...register("userName")}
-        error={!!errors.userName} helperText={errors.userName?.message} />
-      <TextField label="Email" fullWidth margin="normal" {...register("email")}
-        error={!!errors.email} helperText={errors.email?.message} />
-      <TextField label="Full Name" fullWidth margin="normal" {...register("fullName")}
-        error={!!errors.fullName} helperText={errors.fullName?.message} />
-      <TextField label="Password" type="password" fullWidth margin="normal" {...register("password")}
-        error={!!errors.password} helperText={errors.password?.message} />
+        <TextField
+          label="Username"
+          fullWidth
+          {...register("userName")}
+          error={!!errors.userName}
+          helperText={errors.userName?.message}
+        />
+        <TextField
+          label="Email"
+          fullWidth
+          {...register("email")}
+          error={!!errors.email}
+          helperText={errors.email?.message}
+        />
+        <TextField
+          label="Full Name"
+          fullWidth
+          {...register("fullName")}
+          error={!!errors.fullName}
+          helperText={errors.fullName?.message}
+        />
+        <TextField
+          label="Password"
+          type="password"
+          fullWidth
+          {...register("password")}
+          error={!!errors.password}
+          helperText={errors.password?.message}
+        />
 
-      <Typography variant="body2" sx={{ mt: 2 }}>Avatar (webp, required)</Typography>
-      <input type="file" accept="image/webp" {...register("avatar")} />
-      {errors.avatar && <Typography color="error" variant="caption">{errors.avatar.message}</Typography>}
+        <UploadBox
+          label="Avatar"
+          required
+          height={100}
+          preview={avatarPreview}
+          error={errors.avatar?.message}
+          inputProps={register("avatar")}
+        />
+        <UploadBox
+          label="Cover Image"
+          height={70}
+          preview={coverPreview}
+          error={errors.coverImage?.message}
+          inputProps={register("coverImage")}
+        />
 
-      <Typography variant="body2" sx={{ mt: 2 }}>Cover image (webp, optional)</Typography>
-      <input type="file" accept="image/webp" {...register("coverImage")} />
-      {errors.coverImage && <Typography color="error" variant="caption">{errors.coverImage.message}</Typography>}
+        <Button type="submit" variant="contained" size="large" fullWidth disabled={isSubmitting} sx={{ mt: 1 }}>
+          {isSubmitting ? "Registering..." : "Create account"}
+        </Button>
 
-      <Button type="submit" variant="contained" fullWidth disabled={isSubmitting} sx={{ mt: 3 }}>
-        {isSubmitting ? "Registering..." : "Register"}
-      </Button>
-    </Box>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ textAlign: "center", borderTop: "1px solid", borderColor: "divider", pt: 2, mt: 1 }}
+        >
+          Already have an account?{" "}
+          <Box
+            component="span"
+            onClick={() => navigate(ROUTES.LOGIN)}
+            sx={{ color: "primary.main", fontWeight: 600, cursor: "pointer" }}
+          >
+            Sign in
+          </Box>
+        </Typography>
+      </Box>
+    </AuthLayout>
   );
 }
 

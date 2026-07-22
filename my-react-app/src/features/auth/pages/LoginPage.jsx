@@ -4,10 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { TextField, Button, Box, Alert } from "@mui/material";
+import { TextField, Button, Box, Alert, Typography } from "@mui/material";
 import { useAuth } from "../hooks/useAuth";
 import { useErrorToast } from "../../../hooks/useErrorToast";
 import { ROUTES } from "../../../constants/routes";
+import AuthLayout from "../components/AuthLayout";
 
 const loginSchema = z.object({
   identifier: z.string().min(1, "Email or username is required"),
@@ -43,30 +44,49 @@ function LoginPage() {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ maxWidth: 360, mx: "auto", mt: 8 }}>
-      {serverError && <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>}
+    <AuthLayout title="Welcome back" subtitle="Sign in to your CloudLearner account.">
+      <Box
+        component="form"
+        onSubmit={handleSubmit(onSubmit)}
+        sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
+      >
+        {serverError && <Alert severity="error">{serverError}</Alert>}
 
-      <TextField
-        label="Email or Username"
-        fullWidth
-        margin="normal"
-        {...register("identifier")}
-        error={!!errors.identifier}
-        helperText={errors.identifier?.message}
-      />
-      <TextField
-        label="Password"
-        type="password"
-        fullWidth
-        margin="normal"
-        {...register("password")}
-        error={!!errors.password}
-        helperText={errors.password?.message}
-      />
-      <Button type="submit" variant="contained" fullWidth disabled={isSubmitting} sx={{ mt: 2 }}>
-        {isSubmitting ? "Logging in..." : "Log In"}
-      </Button>
-    </Box>
+        <TextField
+          label="Email or Username"
+          fullWidth
+          {...register("identifier")}
+          error={!!errors.identifier}
+          helperText={errors.identifier?.message}
+        />
+        <TextField
+          label="Password"
+          type="password"
+          fullWidth
+          {...register("password")}
+          error={!!errors.password}
+          helperText={errors.password?.message}
+        />
+        <Button type="submit" variant="contained" size="large" fullWidth disabled={isSubmitting} sx={{ mt: 1 }}>
+          {isSubmitting ? "Logging in..." : "Log In"}
+        </Button>
+
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ textAlign: "center", borderTop: "1px solid", borderColor: "divider", pt: 2, mt: 1 }}
+        >
+          Don&apos;t have an account?{" "}
+          <Box
+            component="span"
+            onClick={() => navigate(ROUTES.REGISTER)}
+            sx={{ color: "primary.main", fontWeight: 600, cursor: "pointer" }}
+          >
+            Create one
+          </Box>
+        </Typography>
+      </Box>
+    </AuthLayout>
   );
 }
 
