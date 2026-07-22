@@ -94,19 +94,17 @@ Not called for by `Phases.md`, but built and already wired project-wide:
 - `context/ErrorToastContextValue.js` / `context/ErrorToastContext.jsx` — `ErrorToastProvider` holds a `toasts` array; `showError(err, title)` extracts `err.response?.data?.message`, pushes a toast, auto-dismisses after 6s
 - `hooks/useErrorToast.js` — throws if used outside `ErrorToastProvider`, same pattern as `useAuth`
 - `components/ErrorToastStack.jsx` — renders stacked MUI `Alert`s, fixed top-center
-- `main.jsx` — `ErrorToastProvider` now wraps `AuthProvider` (provider order: Router → ErrorToast → Auth → App)
-- `App.jsx` — renders `<ErrorToastStack />` alongside `<AppRouter />`
-- Every data-fetching hook built so far (`useTweets`, `useTweetFeed`, `useTweetInteractions`, `useReactorsList`) now calls `showError()` in its `catch` block **in addition to** setting local `error` state
+- `main.jsx` — `ErrorToastProvider` now wraps `AuthProvider` (provider order at the time: Router → ErrorToast → Auth → App)
 
-This changes the project's error-handling pattern from what `Rules.md` documents (hook-level `error` state only) to a dual pattern (local `error` state + global toast). `Rules.md` has been updated to reflect this as the new standard — see its Error Handling section.
+**⚠️ Superseded by the Session 8 TanStack Query migration below.** The last bullet point that used to be here (every hook calling `showError()` itself in its `catch` block) is no longer accurate — that responsibility moved to a centralized `QueryCache`/`MutationCache` `onError` in `lib/queryClient.js`. Left the rest of this entry as-is for historical accuracy (it's what shipped at the time); see Session 8 for the current pattern and `Rules.md`'s "Global Error Notifications" section for what's authoritative now.
 
 ## 2. What File Is Currently Being Worked On
 
-**None actively in progress.** Phases 1–7 confirmed complete against the actual repo. Phase 8's core interaction/reactor-list logic is also in place but hasn't had the same live end-to-end testing pass logged for it yet — verify before treating it as fully closed.
+**None actively in progress.** Phases 1–7 confirmed complete against the actual repo. Phase 8's core interaction/reactor-list logic is also in place but hasn't had the same live end-to-end testing pass logged for it yet — verify before treating it as fully closed. The TanStack Query retrofit (see Session 8 below) is complete and merged (`8eaf78d`), ahead of Phase 9.
 
 **Next real work — Phase 9 (User Profile):**
 
-`features/users/services/userService.js` is still empty (correctly, per this doc's Phase 3 note — deferred to Phase 9). View/edit own profile, avatar/cover upload, view another user by ID, browse all users via infinite scroll (consistent with the Phase 7/8 pattern already established), delete own account.
+`features/users/services/userService.js` is still empty (correctly, per this doc's Phase 3 note — deferred to Phase 9; a prior in-progress attempt at this — `useProfile.js` + `userService.js` — was deliberately deleted before the TanStack migration so Phase 9 would be built directly on the new query/mutation pattern from the start, not retrofitted afterward). View/edit own profile, avatar/cover upload, view another user by ID, browse all users via infinite scroll (consistent with the Phase 7/8 pattern already established, built on `hooks/useInfiniteListQuery.js`), delete own account.
 
 ---
 
@@ -142,6 +140,24 @@ Completed Phase 6 (Tweet CRUD — My Tweets) in full: `tweetService.js`, `useTwe
 
 Completed Phase 7 (Public Tweet Feed) and the core of Phase 8 (Like/Dislike/Repost), plus an unplanned global error-toast system (`ErrorToastContext`, `useErrorToast`, `ErrorToastStack`) now wired into every existing data-fetching hook. This work was found by reading the repo directly — it had not yet been reflected in this file. Flagged two follow-ups, now resolved: (1) `Rules.md`'s Error Handling section only documented local hook-level `error` state — updated to cover the new toast pattern.
 
+### Session 8
+
+Migrated server-state management to `@tanstack/react-query` v5, project-wide, ahead of schedule (originally Phase 12, pulled forward to before Phase 9 — see `Phases.md`). Deliberate architectural pivot, logged per this doc's own practice.
+
+**What changed:**
+
+- Added `lib/queryClient.js` (QueryClient factory with centralized `QueryCache`/`MutationCache` `onError`) and `lib/QueryProvider.jsx` (builds the client via `useMemo` inside a component, since the error handler needs `useErrorToast()`); wired into `main.jsx` between `ErrorToastProvider` and `AuthProvider`.
+- Added `constants/queryKeys.js` (`authKeys`, `tweetKeys` factories) and `hooks/useInfiniteListQuery.js` (generic `useInfiniteQuery` wrapper).
+- Rebuilt on `useQuery`/`useMutation`/`useInfiniteQuery`: `AuthContext.jsx`, `useTweets.js`, `useTweetFeed.js`, `useReactorsList.js`, `useTweetInteractions.js`.
+- `tweetService.js` and `authService.js` — untouched, as planned; TanStack Query sits above the service layer, not instead of it.
+- `Rules.md` updated in the same commit (Data Fetching, Global Error Notifications, and a new "Known gaps" subsection under Error Handling).
+
+**Verified outcomes vs. the original plan — including where the plan was wrong:**
+
+- `useTweets.js`, `useTweetFeed.js`, `useReactorsList.js`, `AuthContext.jsx` all shrank roughly as predicted — manual `isLoading`/`error`/pagination state replaced by the query/infinite-query hooks.
+- `useTweetInteractions.js` did **not** shrink as predicted. The original estimate was "roughly a third" of its prior size; it actually grew from 79 to 127 lines. Reason: like/dislike/repost state is local to each `TweetCard` instance (not read from the query cache), so the optimistic-update/rollback logic still needs manual `useState` plus `onMutate`/`onError` context-passing per mutation — TanStack restructured this hook, it didn't eliminate the complexity. Flagged in `Rules.md`'s new "Known gaps" section as a deliberate scope decision (cross-list cache sync was judged a larger, separate change) rather than a bug.
+- `useTweets.js`'s list fetch still isn't on infinite scroll, despite `Rules.md`'s pagination rule listing `getMyTweets` as in-scope for it — this predates the migration and was preserved as-is rather than silently expanding scope during a refactor. Also flagged in `Rules.md`.
+
 ### Next Update
 
 _Add the next development milestone here._
@@ -152,3 +168,4 @@ _Add the next development milestone here._
 2. Phase 4 was initially assumed incomplete because pages were placeholders — but placeholder page _content_ is expected at this stage; Phase 4's real scope (routing mechanics) was fully done. Don't confuse "placeholder UI" with "incomplete phase" — check each phase's actual scope in `Phases.md` before judging completion.
 3. An "unstyled" look isn't automatically a missing-CSS-import bug — check the actual CSS file contents (are the class names even used anywhere?) before assuming imports are the problem.
 4. Code can outrun documentation entirely — Phases 7 and 8 plus a whole undocumented error-toast system existed in the repo before this file was updated to reflect them. Periodically diff `src/` against `docs/` directly rather than only updating docs when told a phase is starting.
+5. A pre-migration analysis's size/complexity predictions aren't guaranteed to hold — Session 8's TanStack Query retrofit shrank three hooks as predicted but grew `useTweetInteractions.js` instead of shrinking it, because its optimistic-update state doesn't live in the query cache. Log actual outcomes after a migration, not just the plan before it.

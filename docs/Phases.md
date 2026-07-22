@@ -68,9 +68,11 @@ Evaluate whether React Context is sufficient for global state management. Introd
 
 ## Phase 12 – Performance Optimization
 
-Optimize the application using React.memo, useMemo, and useCallback where appropriate. Implement code splitting with React.lazy and Suspense, and consider TanStack Query for API caching and server state management.
+Optimize the application using React.memo, useMemo, and useCallback where appropriate. Implement code splitting with React.lazy and Suspense.
 
----
+**TanStack Query — adopted early, not deferred:** originally this phase's plan was to "consider TanStack Query for API caching and server state management." That was pulled forward and completed as a project-wide retrofit before Phase 9, once it became clear server-state caching was worth having from Phase 9 onward rather than migrating existing hooks later. See `Architecture.md`'s Tech Stack table and data-flow diagram, `Rules.md`'s "Data Fetching" section, and `Memory.md`'s Session 8 entry for what changed and why. This phase's remaining scope is just the `React.memo`/`useMemo`/`useCallback`/code-splitting items above.
+For React performance optimization, consider the following techniques: React.memo, useMemo, useCallback, Code Splitting (React.lazy + Suspense), Lazy Loading Images, Virtualization (react-window/react-virtualized), Pagination, Infinite Scroll, Debouncing, Throttling, TanStack Query (React Query) for caching and server-state management, Proper State Placement, Component Splitting, Stable Keys, Avoiding Unnecessary State, Avoiding Unnecessary useEffect, Optimizing Context Usage, useTransition, useDeferredValue, Bundle Optimization (tree shaking, dynamic imports, minification, removing unused dependencies), Optimizing Rendering Logic, and using the React DevTools Profiler to identify real performance bottlenecks before applying optimizations.
+Choose only the optimization techniques that fit your specific performance bottleneck, and be prepared to explain the reasoning behind each choice rather than applying every optimization indiscriminately.
 
 ## Phase 13 – Final Polish
 
