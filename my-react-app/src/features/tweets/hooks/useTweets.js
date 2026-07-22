@@ -1,81 +1,57 @@
 // src/features/tweets/hooks/useTweets.js
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createTweet,
   getMyTweets,
   updateTweet,
   deleteTweet,
 } from "../services/tweetService";
-import { useErrorToast } from "../../../hooks/useErrorToast";
+import { tweetKeys } from "../../../constants/queryKeys";
 
 export function useTweets() {
-  const [tweets, setTweets] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { showError } = useErrorToast();
+  const queryClient = useQueryClient();
 
-  const getErrorMessage = (err) =>
-    err.response?.data?.message || "Something went wrong. Please try again.";
-
-  const fetchTweets = useCallback(async (params = {}) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await getMyTweets(params);
-      setTweets(res.data.data.tweets ?? res.data.data);
-    } catch (err) {
-      setError(getErrorMessage(err));
-      showError(err, "Couldn't load your tweets");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [showError]);
-
-  useEffect(() => {
-    fetchTweets();
-  }, [fetchTweets]);
-
-  const create = useCallback(
-    async (formData) => {
-      try {
-        await createTweet(formData);
-        await fetchTweets();
-      } catch (err) {
-        setError(getErrorMessage(err));
-        showError(err, "Couldn't post tweet");
-        throw err;
-      }
+  const {
+    data: tweets = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: tweetKeys.myTweets(),
+    queryFn: async () => {
+      const res = await getMyTweets();
+      return res.data.data.tweets ?? res.data.data;
     },
-    [fetchTweets, showError]
-  );
+    meta: { errorTitle: "Couldn't load your tweets" },
+  });
 
-  const update = useCallback(
-    async (id, data) => {
-      try {
-        await updateTweet(id, data);
-        await fetchTweets();
-      } catch (err) {
-        setError(getErrorMessage(err));
-        showError(err, "Couldn't update tweet");
-        throw err;
-      }
-    },
-    [fetchTweets, showError]
-  );
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: tweetKeys.myTweets() });
 
-  const remove = useCallback(
-    async (id) => {
-      try {
-        await deleteTweet(id);
-        await fetchTweets();
-      } catch (err) {
-        setError(getErrorMessage(err));
-        showError(err, "Couldn't delete tweet");
-        throw err;
-      }
-    },
-    [fetchTweets, showError]
-  );
+  const createMutation = useMutation({
+    mutationFn: createTweet,
+    meta: { errorTitle: "Couldn't post tweet" },
+    onSuccess: invalidate,
+  });
 
-  return { tweets, isLoading, error, refetch: fetchTweets, create, update, remove };
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => updateTweet(id, data),
+    meta: { errorTitle: "Couldn't update tweet" },
+    onSuccess: invalidate,
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: deleteTweet,
+    meta: { errorTitle: "Couldn't delete tweet" },
+    onSuccess: invalidate,
+  });
+
+  return {
+    tweets,
+    isLoading,
+    error: error ? (error.response?.data?.message || "Something went wrong. Please try again.") : null,
+    refetch,
+    create: (formData) => createMutation.mutateAsync(formData),
+    update: (id, data) => updateMutation.mutateAsync({ id, data }),
+    remove: (id) => removeMutation.mutateAsync(id),
+  };
 }

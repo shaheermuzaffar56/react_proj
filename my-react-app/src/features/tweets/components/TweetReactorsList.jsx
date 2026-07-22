@@ -4,8 +4,9 @@ import { Dialog, DialogTitle, DialogContent, List, ListItem, ListItemAvatar, Ava
 import { useReactorsList } from "../hooks/useReactorsList";
 
 // fetchFn passed in by the caller — decides which of the three endpoints this dialog shows
-export default function TweetReactorsList({ open, onClose, title, tweetId, fetchFn }) {
-  const { users, isLoading, error, hasMore, loadMore } = useReactorsList(fetchFn, tweetId, open);
+// src/features/tweets/components/TweetReactorsList.jsx
+export default function TweetReactorsList({ open, onClose, title, tweetId, fetchFn, type }) {
+  const { users, isLoading, error, hasMore, loadMore } = useReactorsList(fetchFn, tweetId, open, type);
 
   const sentinelRef = useRef(null);
   const observerCallback = useCallback(

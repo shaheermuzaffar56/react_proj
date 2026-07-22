@@ -102,6 +102,7 @@ export default function TweetCard({ tweet, onEdit, onDelete }) {
           title={listConfig[openList].title}
           tweetId={tweet._id}
           fetchFn={listConfig[openList].fetchFn}
+          type={openList}
         />
       )}
     </Card>

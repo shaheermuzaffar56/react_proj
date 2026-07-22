@@ -30,6 +30,12 @@ Use route constants from `constants/routes.js` (`ROUTES` and `buildPath()`). Nev
 
 Each feature should have its own custom hook (for example, `useTweets` or `useAuth`). Components should never call service functions directly.
 
+**Since the TanStack Query migration (retrofit before Phase 9):** feature hooks no longer manage `isLoading`/`error`/cached-data via `useState`/`useEffect`. They wrap `@tanstack/react-query`'s `useQuery`/`useMutation`/`useInfiniteQuery` instead, adapting the generic cache shape into whatever field names the consuming component already expects (e.g. `useTweetFeed` returns `{ tweets, isLoading, error, hasMore, loadMore }`, same names as before, backed by `useInfiniteQuery` internally). See `Architecture.md` for the updated data-flow diagram.
+
+- **Query keys** live in `constants/queryKeys.js` as factory functions (`authKeys`, `tweetKeys`) — never write a query key as a bare inline array/string in a hook.
+- **List/pagination hooks** that follow the infinite-scroll rule below should be built on the shared `hooks/useInfiniteListQuery.js` wrapper rather than calling `useInfiniteQuery` directly, so the pagination-flattening logic isn't duplicated per feature.
+- **The `QueryClient` instance must never be created at module scope.** It's built inside `lib/QueryProvider.jsx` via `useMemo`, because its global error handler needs to call `useErrorToast()`, which only works inside a component. See `lib/queryClient.js` (the factory function) and `lib/QueryProvider.jsx` (the component that instantiates it).
+
 ### Lazy-Loaded Routes
 
 Use `React.lazy()` together with `Suspense` for lazy-loaded pages, following the existing setup in `AppRouter.jsx`.
@@ -44,7 +50,14 @@ Every backend endpoint that returns a `pagination` object (`getAllTweets`, `getM
 
 ### Global Error Notifications
 
-Use `useErrorToast()` (from `hooks/useErrorToast.js`) for a global, top-of-screen toast whenever a request fails. Call `showError(err, title)` inside the hook's `catch` block, alongside setting local `error` state — see `useTweets.js`, `useTweetFeed.js`, `useTweetInteractions.js`, and `useReactorsList.js` for the reference pattern. `ErrorToastProvider` must wrap the app (already done in `main.jsx`) for this to work; components render `<ErrorToastStack />` once, at the top level (already done in `App.jsx`), not per-feature.
+**Since the TanStack Query migration, this is centralized — do not call `useErrorToast()` from inside a query/mutation hook to fire the global toast.** `lib/queryClient.js` wires a `QueryCache`/`MutationCache` `onError` callback (built with `useErrorToast()`'s `showError`, via the `lib/QueryProvider.jsx` wrapper) that fires automatically for every failed `useQuery`/`useMutation`/`useInfiniteQuery` in the app. To control the toast:
+
+- Pass `meta: { errorTitle: "Couldn't do the thing" }` on the query/mutation to set the toast's title (falls back to `showError`'s default title if omitted).
+- Pass `meta: { skipGlobalErrorToast: true }` to suppress the global toast entirely — used when a component already shows its own dedicated error UI for that action (e.g. `AuthContext`'s login mutation, since `LoginPage.jsx` already renders its own inline `Alert` + calls `showError` itself; doubling up would show two toasts for one failure).
+
+`ErrorToastProvider` must still wrap the app above `QueryProvider` (already done in `main.jsx` — see `Architecture.md`'s provider order) for this to work; components render `<ErrorToastStack />` once, at the top level (already done in `App.jsx`), not per-feature.
+
+**Local inline `error` state is still hook-owned, not automatic.** A hook that needs to render an inline error message (e.g. `useTweetInteractions`'s rollback message on a `TweetCard`) still sets its own `error` state in the mutation's `onError` callback — TanStack Query doesn't do this for you. The global toast and the local inline message are two separate things that both still need to be wired, same as before; only the _toast-firing_ part is now automatic.
 
 ## 2. What to Avoid
 
@@ -55,9 +68,9 @@ Use `useErrorToast()` (from `hooks/useErrorToast.js`) for a global, top-of-scree
 - ❌ **Building UI for excluded endpoints** — no comments, no subscribe/unsubscribe, no watch history, no channel page (see PRD.md §3).
 - ❌ **Skipping Zod validation** on any form — even "simple" ones like login.
 - ❌ **Prop drilling past 2 levels** — use Context (or feature-local state) instead once it gets awkward.
-- ❌ **New state management libraries before Step 11** — Context is the default until that step's evaluation.
+- ❌ **New _client-state_ management libraries before Step 11** — Context remains the default for auth/UI state until that step's evaluation. `@tanstack/react-query` is not an exception to watch out for going forward — it was deliberately adopted ahead of schedule (originally slated for Phase 12) specifically because it's _server_-state (caching/syncing API data), a different concern from client state like Redux/Zustand would address. Don't read its early adoption as license to also pull in Redux/Zustand early.
 - ❌ **CSS-in-JS other than MUI's `sx`/`styled`** — don't introduce Tailwind, styled-components, etc. Stack is locked.
-- ❌ **Setting local `error` state without also calling `showError()`** (or vice versa) in a data-fetching hook — the two are meant to work together (inline message + global toast), not as alternatives to each other.
+- ❌ **Calling `useErrorToast().showError()` directly from inside a `useQuery`/`useMutation`/`useInfiniteQuery` hook** — this is now handled automatically by the global `QueryCache`/`MutationCache` `onError` (see "Global Error Notifications" above). Manually calling `showError()` on top of that would double-fire the toast. Local inline `error` state is still hook-owned and still required per "Loading & empty states" below — only the _global toast_ part moved out of the hook.
 
 ## 3. Error Handling
 
@@ -66,7 +79,12 @@ Use `useErrorToast()` (from `hooks/useErrorToast.js`) for a global, top-of-scree
 - All 401 responses are already handled globally by the response interceptor (auto-refresh + retry, one attempt only). Components should **not** manually catch 401 refresh logic.
 - All other errors (400, 403, 404, 500) must be caught at the **hook level**, not swallowed silently in the service function. Hooks expose an `error` state that components render (e.g. a MUI `Alert`).
 - Never show raw backend error objects to the user — extract `error.response?.data?.message` and display that, with a generic fallback string if it's missing.
-- **Global error toasts:** every data-fetching/mutating hook must also call `useErrorToast().showError(err, title)` in its `catch` block, in addition to setting local `error` state. Local `error` state drives inline UI (e.g. an `Alert` where the request happened); `showError` drives the global toast stack (`ErrorToastStack`, mounted in `App.jsx`) for a visible top-of-screen notification regardless of which component triggered the request. Both are required, not either/or — see `useTweets.js`, `useTweetFeed.js`, `useTweetInteractions.js`, and `useReactorsList.js` for the reference pattern.
+- **Global error toasts:** for anything built on `useQuery`/`useMutation`/`useInfiniteQuery`, the toast fires automatically via the centralized `QueryCache`/`MutationCache` `onError` — see "Global Error Notifications" above. Set `meta: { errorTitle: "..." }` for a custom title, or `meta: { skipGlobalErrorToast: true }` if the calling component already shows its own error UI. Local `error` state (for inline `Alert`s where the request happened) is still hook-owned and still required — the hook sets it in the relevant `onError` callback, same responsibility as before, just without also calling `showError()` itself.
+
+### Known gaps (flagged, not yet resolved)
+
+- **`useTweets.js`'s list fetch (`getMyTweets`) does not use infinite scroll**, despite the rule above listing `getMyTweets` as one of the endpoints that must. This predates the TanStack Query migration and was carried over as-is (the migration preserved existing behavior rather than expanding scope) — flagged here so it isn't lost, pending a decision on whether to bring it in line with the rule.
+- **`useTweetInteractions.js`'s like/dislike/repost state is local to each `TweetCard` instance**, not synced through the query cache. The same tweet appearing in both the public feed and "My Tweets" can show independently-stale reaction counts until each is individually refetched. This was true before the migration too; the migration preserved the existing local-state behavior rather than introducing cross-list cache synchronization, which would be a larger, deliberate change.
 
 ### Form validation errors
 

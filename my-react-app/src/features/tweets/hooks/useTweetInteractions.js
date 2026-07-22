@@ -1,7 +1,7 @@
 // src/features/tweets/hooks/useTweetInteractions.js
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { likeTweet, dislikeTweet, repostTweet } from "../services/tweetService";
-import { useErrorToast } from "../../../hooks/useErrorToast";
 
 export function useTweetInteractions(tweet) {
   const [state, setState] = useState({
@@ -13,68 +13,85 @@ export function useTweetInteractions(tweet) {
     repostsCount: tweet.repostsCount,
   });
   const [error, setError] = useState(null);
-  const { showError } = useErrorToast();
 
-  const toggleLike = async () => {
-    const previous = state;
-    setState((s) => ({
-      ...s,
-      isLiked: !s.isLiked,
-      likesCount: s.likesCount + (s.isLiked ? -1 : 1),
-      isDisliked: s.isLiked ? s.isDisliked : false,
-      dislikesCount: !s.isLiked && s.isDisliked ? s.dislikesCount - 1 : s.dislikesCount,
-    }));
-    setError(null);
-    try {
-      const res = await likeTweet(tweet._id);
+  const likeMutation = useMutation({
+    mutationFn: () => likeTweet(tweet._id),
+    meta: { errorTitle: "Couldn't update like" },
+    onMutate: () => {
+      setError(null);
+      const previous = state;
+      setState((s) => ({
+        ...s,
+        isLiked: !s.isLiked,
+        likesCount: s.likesCount + (s.isLiked ? -1 : 1),
+        isDisliked: s.isLiked ? s.isDisliked : false,
+        dislikesCount: !s.isLiked && s.isDisliked ? s.dislikesCount - 1 : s.dislikesCount,
+      }));
+      return { previous };
+    },
+    onError: (err, _vars, context) => {
+      if (context?.previous) setState(context.previous);
+      setError(err.response?.data?.message || "Couldn't update like. Please try again.");
+    },
+    onSuccess: (res) => {
       const { isLiked, likesCount, dislikesCount } = res.data.data;
       setState((s) => ({ ...s, isLiked, likesCount, dislikesCount }));
-    } catch (err) {
-      setState(previous);
-      setError(err.response?.data?.message || "Couldn't update like. Please try again.");
-      showError(err, "Couldn't update like");
-    }
-  };
+    },
+  });
 
-  const toggleDislike = async () => {
-    const previous = state;
-    setState((s) => ({
-      ...s,
-      isDisliked: !s.isDisliked,
-      dislikesCount: s.dislikesCount + (s.isDisliked ? -1 : 1),
-      isLiked: s.isDisliked ? s.isLiked : false,
-      likesCount: !s.isDisliked && s.isLiked ? s.likesCount - 1 : s.likesCount,
-    }));
-    setError(null);
-    try {
-      const res = await dislikeTweet(tweet._id);
+  const dislikeMutation = useMutation({
+    mutationFn: () => dislikeTweet(tweet._id),
+    meta: { errorTitle: "Couldn't update dislike" },
+    onMutate: () => {
+      setError(null);
+      const previous = state;
+      setState((s) => ({
+        ...s,
+        isDisliked: !s.isDisliked,
+        dislikesCount: s.dislikesCount + (s.isDisliked ? -1 : 1),
+        isLiked: s.isDisliked ? s.isLiked : false,
+        likesCount: !s.isDisliked && s.isLiked ? s.likesCount - 1 : s.likesCount,
+      }));
+      return { previous };
+    },
+    onError: (err, _vars, context) => {
+      if (context?.previous) setState(context.previous);
+      setError(err.response?.data?.message || "Couldn't update dislike. Please try again.");
+    },
+    onSuccess: (res) => {
       const { isDisliked, likesCount, dislikesCount } = res.data.data;
       setState((s) => ({ ...s, isDisliked, likesCount, dislikesCount }));
-    } catch (err) {
-      setState(previous);
-      setError(err.response?.data?.message || "Couldn't update dislike. Please try again.");
-      showError(err, "Couldn't update dislike");
-    }
-  };
+    },
+  });
 
-  const toggleRepost = async () => {
-    const previous = state;
-    setState((s) => ({
-      ...s,
-      isReposted: !s.isReposted,
-      repostsCount: s.repostsCount + (s.isReposted ? -1 : 1),
-    }));
-    setError(null);
-    try {
-      const res = await repostTweet(tweet._id);
+  const repostMutation = useMutation({
+    mutationFn: () => repostTweet(tweet._id),
+    meta: { errorTitle: "Couldn't update repost" },
+    onMutate: () => {
+      setError(null);
+      const previous = state;
+      setState((s) => ({
+        ...s,
+        isReposted: !s.isReposted,
+        repostsCount: s.repostsCount + (s.isReposted ? -1 : 1),
+      }));
+      return { previous };
+    },
+    onError: (err, _vars, context) => {
+      if (context?.previous) setState(context.previous);
+      setError(err.response?.data?.message || "Couldn't update repost. Please try again.");
+    },
+    onSuccess: (res) => {
       const { isReposted, repostsCount } = res.data.data;
       setState((s) => ({ ...s, isReposted, repostsCount }));
-    } catch (err) {
-      setState(previous);
-      setError(err.response?.data?.message || "Couldn't update repost. Please try again.");
-      showError(err, "Couldn't update repost");
-    }
-  };
+    },
+  });
 
-  return { ...state, error, toggleLike, toggleDislike, toggleRepost };
+  return {
+    ...state,
+    error,
+    toggleLike: () => likeMutation.mutate(),
+    toggleDislike: () => dislikeMutation.mutate(),
+    toggleRepost: () => repostMutation.mutate(),
+  };
 }

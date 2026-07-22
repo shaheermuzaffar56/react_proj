@@ -1,43 +1,49 @@
 // src/context/AuthContext.jsx
-import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser, loginUser, logoutUser } from "../features/auth/services/authService";
 import { getAccessToken, setTokens, clearTokens } from "../utils/tokenStorage";
+import { authKeys } from "../constants/queryKeys";
 import { AuthContext } from "./AuthContextValue";
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const restoreSession = async () => {
-      const token = getAccessToken();
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
+  const { data: user = null, isLoading } = useQuery({
+    queryKey: authKeys.me(),
+    queryFn: async () => {
       try {
         const { data } = await getCurrentUser();
-        setUser(data.data.userData);
-      } catch {
+        return data.data.userData;
+      } catch (err) {
         clearTokens();
-      } finally {
-        setIsLoading(false);
+        throw err;
       }
-    };
-    restoreSession();
-  }, []);
+    },
+    enabled: !!getAccessToken(),
+    retry: false,
+    staleTime: Infinity,
+    meta: { skipGlobalErrorToast: true }, // matches old behavior: silent on failed session restore
+  });
 
-  const login = async (credentials) => {
-    const { data } = await loginUser(credentials);
-    setTokens({ accessToken: data.data.accessToken, refreshToken: data.data.refreshToken });
-    setUser(data.data.userData);
-  };
+  const loginMutation = useMutation({
+    mutationFn: loginUser,
+    meta: { skipGlobalErrorToast: true }, // LoginPage already shows its own error UI
+    onSuccess: ({ data }) => {
+      setTokens({ accessToken: data.data.accessToken, refreshToken: data.data.refreshToken });
+      queryClient.setQueryData(authKeys.me(), data.data.userData);
+    },
+  });
 
-  const logout = async () => {
-    await logoutUser();
-    clearTokens();
-    setUser(null);
-  };
+  const logoutMutation = useMutation({
+    mutationFn: logoutUser,
+    onSuccess: () => {
+      clearTokens();
+      queryClient.setQueryData(authKeys.me(), null);
+    },
+  });
+
+  const login = (credentials) => loginMutation.mutateAsync(credentials);
+  const logout = () => logoutMutation.mutateAsync();
 
   const value = { user, isAuthenticated: !!user, isLoading, login, logout };
 
