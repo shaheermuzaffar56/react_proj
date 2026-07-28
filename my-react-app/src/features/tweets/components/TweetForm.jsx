@@ -61,6 +61,7 @@ export default function TweetForm({ tweet, onSubmit, onDone }) {
       }
       onDone?.(); // let the parent close a dialog / navigate away
     } catch (err) {
+      console.log("catcherror", err)
       setServerError(err.response?.data?.message || "Something went wrong. Please try again.");
     }
   };
