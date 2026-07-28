@@ -16,3 +16,9 @@ export const userKeys = {
   detail: (id) => [...userKeys.all, "detail", id],
   list: () => [...userKeys.all, "list"],
 };
+
+export const moderationKeys = {
+  all: ["moderation"],
+  tweets: (filters) => [...moderationKeys.all, "tweets", filters],
+  users: (filters) => [...moderationKeys.all, "users", filters],
+};

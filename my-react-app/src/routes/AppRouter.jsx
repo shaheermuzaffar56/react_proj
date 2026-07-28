@@ -5,6 +5,7 @@ import { Suspense, lazy } from "react";
 import { ROUTES } from "../constants/routes";
 import MainLayout from "../components/MainLayout";
 import ProtectedRoute from "./ProtectedRoute";
+import RoleProtectedRoute from "./RoleProtectedRoute";
 
 const TweetDetailPreview = lazy(() => import("../pages/TweetDetailPreview"));
 const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"));
@@ -14,6 +15,7 @@ const FeedPage = lazy(() => import("../features/tweets/pages/FeedPage"));
 const ProfilePage = lazy(() => import("../features/users/pages/ProfilePage"));
 const UserDetailPage = lazy(() => import("../features/users/pages/UserDetailPage"));
 const UsersListPage = lazy(() => import("../features/users/pages/UsersListPage"));
+const ModerationPage = lazy(() => import("../features/moderation/pages/ModerationPage"));
 const NotFound = () => <div>404 — Page not found</div>;
 
 function AppRouter() {
@@ -31,6 +33,9 @@ function AppRouter() {
             <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
             <Route path={ROUTES.USERS} element={<UsersListPage />} />
             <Route path={ROUTES.USER_DETAIL} element={<UserDetailPage />} />
+            <Route element={<RoleProtectedRoute allowedRoles={["moderator", "admin"]} />}>
+              <Route path={ROUTES.MODERATION} element={<ModerationPage />} />
+            </Route>
           </Route>
         </Route>
 

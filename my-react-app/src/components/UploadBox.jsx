@@ -1,6 +1,5 @@
 // src/components/UploadBox.jsx
 // Dashed-border file upload box with image preview, matching the Figma
-// FileUploadField pattern (figma_design/src/screens/Auth.tsx). Shared by
 // RegisterPage (avatar/cover) and TweetForm (tweet image).
 import { Box, Typography } from "@mui/material";
 import ImageIcon from "@mui/icons-material/Image";
