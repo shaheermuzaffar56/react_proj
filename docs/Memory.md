@@ -4,10 +4,6 @@
 
 ---
 
-## Last Verified Against Repo
-
-`shaheermuzaffar56/react_proj` — `my-react-app/` — verified by reading actual files, not just Notion status.
-
 ---
 
 ## 1. What Has Been Completed
@@ -157,6 +153,36 @@ Migrated server-state management to `@tanstack/react-query` v5, project-wide, ah
 - `useTweets.js`, `useTweetFeed.js`, `useReactorsList.js`, `AuthContext.jsx` all shrank roughly as predicted — manual `isLoading`/`error`/pagination state replaced by the query/infinite-query hooks.
 - `useTweetInteractions.js` did **not** shrink as predicted. The original estimate was "roughly a third" of its prior size; it actually grew from 79 to 127 lines. Reason: like/dislike/repost state is local to each `TweetCard` instance (not read from the query cache), so the optimistic-update/rollback logic still needs manual `useState` plus `onMutate`/`onError` context-passing per mutation — TanStack restructured this hook, it didn't eliminate the complexity. Flagged in `Rules.md`'s new "Known gaps" section as a deliberate scope decision (cross-list cache sync was judged a larger, separate change) rather than a bug.
 - `useTweets.js`'s list fetch still isn't on infinite scroll, despite `Rules.md`'s pagination rule listing `getMyTweets` as in-scope for it — this predates the migration and was preserved as-is rather than silently expanding scope during a refactor. Also flagged in `Rules.md`.
+
+### Session 9
+
+Found three commits on the repo that had shipped after Session 8 but were never logged here — caught by diffing `git log` against this file directly, per this doc's own lesson #4 below.
+
+**`c13c55b` — Design system and UI improvements:**
+
+- `theme.js` (new) — MUI theme: palette, typography, component style overrides.
+- `Sidebar.jsx` / `TopBar.jsx` — refactored for brand, user section, navigation, new styling.
+- `features/auth/components/AuthLayout.jsx` (new) — shared layout wrapper for Login/Register.
+- `components/UploadBox.jsx` (new) — reusable file-upload UI.
+- `hooks/useFilePreview.js` — moved from a feature-local location to shared `hooks/`, now used by both auth and tweets features.
+- `constants/navItems.js`, `constants/tweetStatus.js` (new) — centralized nav items and status-chip config.
+- Google Fonts (Manrope, Inter) wired into `index.html`; `main.jsx` updated to apply the theme.
+- `LoginPage.jsx` / `RegisterPage.jsx` / `TweetForm.jsx` — adjusted to use the new `AuthLayout`/`UploadBox`/theme.
+
+**`4c2ad91` — TweetCard.jsx rewrite (44 → 228 lines):**
+
+- Added author header: avatar, name, relative timestamp (`formatDate` helper: "Xm/Xh/Xd" under a week, else "Mon D").
+- Replaced inline edit/delete buttons with a `MoreVert` overflow `Menu`.
+- Swapped the like icon from thumbs-up to heart (`FavoriteIcon`/`FavoriteBorderIcon`).
+- Added `fmtNum` helper for compact counts (e.g. `1.2k`).
+- Added a "read more" clamp for descriptions over 180 characters.
+
+**`a6228ea` — Offline handling + cleanup (this session):**
+
+- `api/axios.js` — added `timeout: 5000` to both the main `api` instance and the separate `refreshClient` instance. Added a request-interceptor check: if `navigator.onLine` is `false`, the request short-circuits with a synthetic error shaped like a normal Axios error response, so it flows through existing error handling without special-casing. Documented via code comment that DevTools' simulated "Offline" throttle won't reliably trigger the `navigator.onLine` check — the `timeout` is what guarantees those requests still resolve.
+- `features/tweets/components/TweetForm.jsx` — a leftover debug `console.log("catcherror", err)` was added in the submit catch block, then found and removed in this same session (verified: `setServerError` fallback logic untouched).
+
+None of this affects Phase 9 scope or status — `userService.js` is still confirmed empty; Phase 9 (User Profile) is still the next real work.
 
 ### Next Update
 

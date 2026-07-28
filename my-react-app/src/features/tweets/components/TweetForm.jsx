@@ -21,7 +21,7 @@ const tweetSchema = z.object({
 
 // tweet: pass an existing tweet object to edit; omit/null for create mode
 // onSubmit: the `create` or `update` function from useTweets, passed in by the parent page
-export default function TweetForm({ tweet, onSubmit, onDone }) {
+export default function TweetForm({ tweet, onSubmit, onDone, isPaused }) {
   const isEditMode = !!tweet;
   const [serverError, setServerError] = useState(null);
 
@@ -61,7 +61,6 @@ export default function TweetForm({ tweet, onSubmit, onDone }) {
       }
       onDone?.(); // let the parent close a dialog / navigate away
     } catch (err) {
-      console.log("catcherror", err)
       setServerError(err.response?.data?.message || "Something went wrong. Please try again.");
     }
   };
@@ -88,9 +87,14 @@ export default function TweetForm({ tweet, onSubmit, onDone }) {
           inputProps={register("image")}
         />
       </Box>
+      {isPaused && (
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          You're offline. This will send automatically once your connection is back.
+        </Alert>
+      )}
 
       <Button type="submit" variant="contained" fullWidth disabled={isSubmitting} sx={{ mt: 3 }}>
-        {isSubmitting ? "Saving..." : isEditMode ? "Update Tweet" : "Create Tweet"}
+        {isPaused ? "Waiting for connection..." : isSubmitting ? "Saving..." : isEditMode ? "Update Tweet" : "Create Tweet"}
       </Button>
     </Box>
   );

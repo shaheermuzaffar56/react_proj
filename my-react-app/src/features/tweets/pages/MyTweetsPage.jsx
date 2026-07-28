@@ -8,7 +8,7 @@ import TweetForm from "../components/TweetForm";
 import DeleteTweetDialog from "../components/DeleteTweetDialog";
 
 export default function MyTweetsPage() {
-  const { tweets, isLoading, error, create, update, remove } = useTweets();
+  const { tweets, isLoading, error, isPaused, create, update, remove } = useTweets();
 
   // Create/Edit dialog state — null editingTweet = create mode, tweet object = edit mode
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -56,6 +56,7 @@ export default function MyTweetsPage() {
             tweet={editingTweet}
             onSubmit={editingTweet ? update : create}
             onDone={closeForm}
+            isPaused={isPaused}
           />
         </DialogContent>
       </Dialog>
