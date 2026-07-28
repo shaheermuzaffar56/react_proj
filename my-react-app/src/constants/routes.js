@@ -1,3 +1,4 @@
+// src/constants/routes.js
 export const ROUTES = {
   HOME: "/",
   LOGIN: "/login",
@@ -7,6 +8,7 @@ export const ROUTES = {
   TWEET_DETAIL: "/tweets/:id",       // dynamic — Sub-step 5 covers usage
   PROFILE: "/profile",
   USER_DETAIL: "/users/:id",         // dynamic
+  USERS: "/users",                   // browse all users — new in Phase 9
   MODERATION: "/moderation",
   NOT_FOUND: "*",
 };

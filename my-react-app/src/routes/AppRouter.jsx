@@ -1,4 +1,5 @@
 // src/routes/AppRouter.jsx
+// src/routes/AppRouter.jsx
 import { Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { ROUTES } from "../constants/routes";
@@ -10,7 +11,9 @@ const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"));
 const RegisterPage = lazy(() => import("../features/auth/pages/RegisterPage"));
 const MyTweets = lazy(() => import("../features/tweets/pages/MyTweetsPage"));
 const FeedPage = lazy(() => import("../features/tweets/pages/FeedPage"));
-const Profile = () => <div>Profile placeholder (protected)</div>;
+const ProfilePage = lazy(() => import("../features/users/pages/ProfilePage"));
+const UserDetailPage = lazy(() => import("../features/users/pages/UserDetailPage"));
+const UsersListPage = lazy(() => import("../features/users/pages/UsersListPage"));
 const NotFound = () => <div>404 — Page not found</div>;
 
 function AppRouter() {
@@ -25,7 +28,9 @@ function AppRouter() {
 
           <Route element={<ProtectedRoute />}>
             <Route path={ROUTES.MY_TWEETS} element={<MyTweets />} />
-            <Route path={ROUTES.PROFILE} element={<Profile />} />
+            <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+            <Route path={ROUTES.USERS} element={<UsersListPage />} />
+            <Route path={ROUTES.USER_DETAIL} element={<UserDetailPage />} />
           </Route>
         </Route>
 

@@ -10,3 +10,9 @@ export const tweetKeys = {
   myTweets: () => [...tweetKeys.all, "my"],
   reactors: (tweetId, type) => [...tweetKeys.all, tweetId, type],
 };
+
+export const userKeys = {
+  all: ["users"],
+  detail: (id) => [...userKeys.all, "detail", id],
+  list: () => [...userKeys.all, "list"],
+};

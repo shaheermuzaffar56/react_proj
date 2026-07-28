@@ -94,13 +94,45 @@ Not called for by `Phases.md`, but built and already wired project-wide:
 
 **⚠️ Superseded by the Session 8 TanStack Query migration below.** The last bullet point that used to be here (every hook calling `showError()` itself in its `catch` block) is no longer accurate — that responsibility moved to a centralized `QueryCache`/`MutationCache` `onError` in `lib/queryClient.js`. Left the rest of this entry as-is for historical accuracy (it's what shipped at the time); see Session 8 for the current pattern and `Rules.md`'s "Global Error Notifications" section for what's authoritative now.
 
+### Phase 9 — User Profile ✅ Complete
+
+- `features/users/services/userService.js` — `updateUser`, `updateAvatar`, `updateCover`, `getUserById`, `getAllUsers`, `deleteUser`, all via the shared `api` instance; `getUserById` documented as returning `data` directly (not nested under `userData`, unlike the rest of the User APIs — verified against Swagger in the original handoff prompt, not re-verified live in this session)
+- `constants/queryKeys.js` — added `userKeys` (`detail(id)`, `list()`); no `me()` key — own-profile data intentionally continues to live in `authKeys.me()`
+- `features/users/hooks/useProfile.js` — `updateProfile`/`updateAvatar`/`updateCover`/`deleteAccount` mutations; success writes fresh `userData` directly into `authKeys.me()` via `setQueryData` (no invalidate-refetch) so Sidebar/TopBar update instantly; `deleteAccount` clears tokens and nulls `authKeys.me()`, letting `ProtectedRoute` redirect naturally; exposes aggregated `isPaused` across all four mutations, same pattern as `useTweets.js`
+- `features/users/hooks/useUser.js` — `useQuery` wrapper around `getUserById`
+- `features/users/hooks/useAllUsers.js` — built on `hooks/useInfiniteListQuery.js`, same structural pattern as `useReactorsList.js`
+- `features/users/components/ProfileEditForm.jsx` — RHF + Zod, email + fullName only, mirrors `TweetForm.jsx`'s structure (serverError Alert, isPaused banner)
+- `features/users/components/ProfileImageUploadForm.jsx` — one component reused for both avatar and cover (via `kind`/`fieldName`/`currentImage` props) rather than two near-duplicates; reuses `UploadBox`/`useFilePreview` unchanged
+- `features/users/components/UserListItem.jsx` — minimal avatar/name/username row, links to `USER_DETAIL` via `buildPath()` (first use of `buildPath()` in the codebase)
+- `features/users/components/DeleteAccountDialog.jsx` — mirrors `DeleteTweetDialog.jsx`; does **not** call `onClose()` on success, since a successful delete clears auth state and `ProtectedRoute` redirects the whole page away
+- `features/users/pages/ProfilePage.jsx` — view info always visible; **decision (confirmed with user, not assumed): edit mode is a modal `Dialog`**, matching `MyTweetsPage.jsx`'s create/edit pattern rather than an inline toggle, to keep one consistent edit-UX convention app-wide; avatar/cover upload forms are always-visible inline sections (not modals), matching `RegisterPage.jsx`'s style
+- `features/users/pages/UserDetailPage.jsx` — read-only, `useParams()` pattern from `TweetDetailPreview.jsx`, no edit actions per PRD scope
+- `features/users/pages/UsersListPage.jsx` — infinite scroll, `IntersectionObserver` sentinel copied from `FeedPage.jsx`; no search box (confirmed `/user/allUsers` has no `search` param, unlike the tweet feed)
+- `constants/routes.js` — added `ROUTES.USERS` (`/users`); `USER_DETAIL` (`/users/:id`) already existed
+- `routes/AppRouter.jsx` — `Profile` placeholder replaced with real `lazy()` `ProfilePage`; added `USER_DETAIL` and `USERS` routes
+- **Decision (confirmed with user, not assumed): `USER_DETAIL` and `USERS` are both behind `ProtectedRoute`** (login required), not public — unlike `FEED`/`TWEET_DETAIL`
+- `constants/navItems.js` — added a "Users" nav entry between "My Tweets" and "Profile", no role restriction (any logged-in user can browse); drives both `Sidebar.jsx`'s nav list and `TopBar.jsx`'s page-title lookup from the same array, so no direct edits needed to either component
+- **Verified against `docs/API.md`, not live testing:** `GET /user/allUsers` has no `(Admin)`/`(Admin/Moderator)` tag in the endpoint list (unlike `DELETE /user/deleteUser/{id}` and `PATCH /user/updateUser/{id}`, which do), and is grouped under PRD §2.5 (ordinary user-facing Phase 9 features) rather than §2.6 (role-gated Moderation) — confirms the "any logged-in user" access model the `ProtectedRoute`-only gating assumes
+
+**Verified via live end-to-end testing, not just code review.** A full test checklist (profile view/edit, avatar/cover upload validation and success, delete-account flow, view-other-user, browse-all-users infinite scroll, nav, offline/`isPaused` handling, and a Phase 1–8 regression pass) was handed off and confirmed passing against the real backend. Consistent with this doc's own practice (Phase 6's completion standard) — Phase 9 is now fully closed.
+
+**Correction, caught while updating this doc:** initially flagged "Change password" as a missing/unconfirmed endpoint — wrong. `features/auth/services/authService.js` already has `updatePassword` (`POST /user/updatePassword`, `{ password, newPassword }`), built and live-verified in Phase 5 (see line 43 above). `docs/API.md` just never documented it — another instance of lesson #4 (code outrunning docs). **The actual gap: no hook or UI ever consumes it** — no `useChangePassword` hook, no change-password form anywhere in the codebase. Correctly out of Phase 9 scope (`PRD.md` §2.1 Authentication, not §2.5 User Profile) — this is unfinished Phase 5 work, not a Phase 9 omission. `docs/API.md` should be updated to include it, and a small follow-up (hook + form, likely living in `ProfilePage.jsx` or a dedicated settings area) is still outstanding.
+
+### Follow-up — Change Password ⚠️ Built, not yet live-tested
+
+Closed the gap flagged above:
+
+- `features/auth/hooks/useChangePassword.js` (new) — wraps the existing `updatePassword` service function in a `useMutation`; exposes `changePassword`/`isPaused`. Lives in `features/auth/hooks/` (not `features/users/hooks/`) since it sits next to its own service, matching every other hook/service pairing in the app; `ProfilePage.jsx` imports it cross-feature, same as it already does with `useAuth`.
+- `features/users/components/ChangePasswordForm.jsx` (new) — RHF + Zod, current password + new password (min 8 chars) + client-side-only confirm-password check via `.refine()`. Lives in `features/users/` since that's where it's displayed, even though its hook lives in `features/auth/`.
+- `features/users/pages/ProfilePage.jsx` (updated) — `ChangePasswordForm` added as a second section inside the existing "Edit Profile" `Dialog`, below `ProfileEditForm`, separated by a `Divider`. Deliberately **not** combined into one submit with email/fullName — different mutation, different endpoint. Deliberately does **not** auto-close the dialog on success (unlike `ProfileEditForm`) — shows an inline success `Alert` instead, since the user may still want to edit email/fullName in the same dialog session. Tracks its own `isPasswordPaused` separately from `useProfile()`'s `isPaused` — two independent mutations, shouldn't share paused state.
+
+**Not yet verified live.** Outstanding test cases: wrong current password → server error surfaces correctly; new/confirm password mismatch → client-side error, no request sent; successful change → success alert shows, fields clear, dialog stays open.
+
 ## 2. What File Is Currently Being Worked On
 
-**None actively in progress.** Phases 1–7 confirmed complete against the actual repo. Phase 8's core interaction/reactor-list logic is also in place but hasn't had the same live end-to-end testing pass logged for it yet — verify before treating it as fully closed. The TanStack Query retrofit (see Session 8 below) is complete and merged (`8eaf78d`), ahead of Phase 9.
+**None actively in progress.** Phases 1–7 confirmed complete against the actual repo. Phase 8's core interaction/reactor-list logic is in place but not yet live-tested. Phase 9 (User Profile) is confirmed complete via live testing. The Change Password follow-up (closing the Phase 5 gap identified during Phase 9's wrap-up) is built but not yet live-tested — see above. The TanStack Query retrofit (Session 8) is complete and merged (`8eaf78d`).
 
-**Next real work — Phase 9 (User Profile):**
-
-`features/users/services/userService.js` is still empty (correctly, per this doc's Phase 3 note — deferred to Phase 9; a prior in-progress attempt at this — `useProfile.js` + `userService.js` — was deliberately deleted before the TanStack migration so Phase 9 would be built directly on the new query/mutation pattern from the start, not retrofitted afterward). View/edit own profile, avatar/cover upload, view another user by ID, browse all users via infinite scroll (consistent with the Phase 7/8 pattern already established, built on `hooks/useInfiniteListQuery.js`), delete own account.
+**Next real work:** Live-test the Change Password addition (see checklist above), then Phase 10 (Moderation) — tweet moderation queue and user moderation (role assignment, disable/enable, admin-only user deletion), role-gated to moderator/admin.
 
 ---
 
@@ -184,6 +216,14 @@ Found three commits on the repo that had shipped after Session 8 but were never 
 
 None of this affects Phase 9 scope or status — `userService.js` is still confirmed empty; Phase 9 (User Profile) is still the next real work.
 
+### Session 10
+
+Built Phase 9 (User Profile) in full, following the 6-step plan from the original handoff prompt: `userService.js`, `userKeys`, hooks (`useProfile`/`useUser`/`useAllUsers`), components (edit form, avatar/cover upload, user list item, delete-account dialog), pages (`ProfilePage`/`UserDetailPage`/`UsersListPage`), and routing/nav. Verified the repo's actual state against the handoff prompt's claims before starting (userService.js empty, queryKeys/routes/AppRouter as described) — no discrepancies found. Two scope decisions were explicitly flagged by the prompt and confirmed with the user rather than assumed: (1) profile edit uses a modal `Dialog`, matching `MyTweetsPage.jsx`'s existing pattern; (2) `USER_DETAIL`/`USERS` routes are behind `ProtectedRoute`, not public. Also confirmed via `docs/API.md`'s endpoint-tagging convention that `GET /user/allUsers` is available to any authenticated user, not admin-only. **Live-tested and confirmed fully working** against the real backend (full checklist: profile view/edit, avatar/cover upload, delete-account, view-other-user, browse-all-users infinite scroll, nav, offline handling, Phase 1–8 regression). Initially misflagged "Change password" as a missing endpoint — corrected after checking the actual code: `authService.js`'s `updatePassword` already exists from Phase 5, it just has no hook/UI consuming it yet. `docs/API.md` doesn't document it (drift, not a real gap). Logged as outstanding Phase 5 follow-up work, not Phase 9 scope.
+
+### Session 11
+
+Closed the Change Password gap flagged at the end of Session 10: added `useChangePassword.js` (`features/auth/hooks/`, next to its `authService.js` mutation, per established hook/service pairing convention) and `ChangePasswordForm.jsx` (`features/users/components/`, where it's actually displayed), wired into `ProfilePage.jsx`'s existing "Edit Profile" dialog as a separate section with its own submit — not merged into the email/fullName save, since it's a different mutation. **Not yet live-tested** — see Change Password subsection above for the outstanding checklist.
+
 ### Next Update
 
 _Add the next development milestone here._
@@ -195,3 +235,4 @@ _Add the next development milestone here._
 3. An "unstyled" look isn't automatically a missing-CSS-import bug — check the actual CSS file contents (are the class names even used anywhere?) before assuming imports are the problem.
 4. Code can outrun documentation entirely — Phases 7 and 8 plus a whole undocumented error-toast system existed in the repo before this file was updated to reflect them. Periodically diff `src/` against `docs/` directly rather than only updating docs when told a phase is starting.
 5. A pre-migration analysis's size/complexity predictions aren't guaranteed to hold — Session 8's TanStack Query retrofit shrank three hooks as predicted but grew `useTweetInteractions.js` instead of shrinking it, because its optimistic-update state doesn't live in the query cache. Log actual outcomes after a migration, not just the plan before it.
+6. `docs/API.md` missing an endpoint doesn't mean the endpoint doesn't exist — Session 10 initially concluded "Change password" had no backend support because `API.md` didn't list it, when `authService.js`'s `updatePassword` had actually existed and worked since Phase 5. When a claim about "does X exist" matters, check the real source files (`services/*.js`, live Swagger), not just the generated reference doc, which can drift out of date just like this file can.
