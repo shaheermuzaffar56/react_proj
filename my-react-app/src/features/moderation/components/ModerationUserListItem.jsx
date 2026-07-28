@@ -13,7 +13,7 @@ import {
   IconButton,
 } from "@mui/material";
 import BlockIcon from "@mui/icons-material/Block";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useAuth } from "../../../features/auth/hooks/useAuth";
 
