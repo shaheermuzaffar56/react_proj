@@ -118,7 +118,7 @@ Not called for by `Phases.md`, but built and already wired project-wide:
 
 **Correction, caught while updating this doc:** initially flagged "Change password" as a missing/unconfirmed endpoint — wrong. `features/auth/services/authService.js` already has `updatePassword` (`POST /user/updatePassword`, `{ password, newPassword }`), built and live-verified in Phase 5 (see line 43 above). `docs/API.md` just never documented it — another instance of lesson #4 (code outrunning docs). **The actual gap: no hook or UI ever consumes it** — no `useChangePassword` hook, no change-password form anywhere in the codebase. Correctly out of Phase 9 scope (`PRD.md` §2.1 Authentication, not §2.5 User Profile) — this is unfinished Phase 5 work, not a Phase 9 omission. `docs/API.md` should be updated to include it, and a small follow-up (hook + form, likely living in `ProfilePage.jsx` or a dedicated settings area) is still outstanding.
 
-### Follow-up — Change Password ⚠️ Built, not yet live-tested
+### Follow-up — Change Password ✅ Complete
 
 Closed the gap flagged above:
 
@@ -126,13 +126,15 @@ Closed the gap flagged above:
 - `features/users/components/ChangePasswordForm.jsx` (new) — RHF + Zod, current password + new password (min 8 chars) + client-side-only confirm-password check via `.refine()`. Lives in `features/users/` since that's where it's displayed, even though its hook lives in `features/auth/`.
 - `features/users/pages/ProfilePage.jsx` (updated) — `ChangePasswordForm` added as a second section inside the existing "Edit Profile" `Dialog`, below `ProfileEditForm`, separated by a `Divider`. Deliberately **not** combined into one submit with email/fullName — different mutation, different endpoint. Deliberately does **not** auto-close the dialog on success (unlike `ProfileEditForm`) — shows an inline success `Alert` instead, since the user may still want to edit email/fullName in the same dialog session. Tracks its own `isPasswordPaused` separately from `useProfile()`'s `isPaused` — two independent mutations, shouldn't share paused state.
 
-**Not yet verified live.** Outstanding test cases: wrong current password → server error surfaces correctly; new/confirm password mismatch → client-side error, no request sent; successful change → success alert shows, fields clear, dialog stays open.
+**Verified via live end-to-end testing:** wrong current password → server error surfaces correctly, no crash; new/confirm password mismatch → client-side Zod error, no request sent; successful change → success alert shows, fields clear, dialog stays open.
+
+**Bug caught during setup (not an implementation error):** `ChangePasswordForm.jsx` initially failed to load with a Vite 500 (`Failed to resolve import "../components/ChangePasswordForm"`) — the file had never actually been saved to disk after being pasted. Re-saved and confirmed working. Worth a quick sanity check after any multi-file step: confirm every new file referenced by an import actually exists before assuming a paste succeeded.
 
 ## 2. What File Is Currently Being Worked On
 
-**None actively in progress.** Phases 1–7 confirmed complete against the actual repo. Phase 8's core interaction/reactor-list logic is in place but not yet live-tested. Phase 9 (User Profile) is confirmed complete via live testing. The Change Password follow-up (closing the Phase 5 gap identified during Phase 9's wrap-up) is built but not yet live-tested — see above. The TanStack Query retrofit (Session 8) is complete and merged (`8eaf78d`).
+**None actively in progress.** Phases 1–7 confirmed complete against the actual repo. Phase 8's core interaction/reactor-list logic is in place and live-tested. Phase 9 (User Profile) and its Change Password follow-up are both confirmed complete via live testing. The TanStack Query retrofit (Session 8) is complete and merged (`8eaf78d`).
 
-**Next real work:** Live-test the Change Password addition (see checklist above), then Phase 10 (Moderation) — tweet moderation queue and user moderation (role assignment, disable/enable, admin-only user deletion), role-gated to moderator/admin.
+**Next real work:** Phase 10 (Moderation) — tweet moderation queue and user moderation (role assignment, disable/enable, admin-only user deletion), role-gated to moderator/admin.
 
 ---
 
@@ -222,7 +224,7 @@ Built Phase 9 (User Profile) in full, following the 6-step plan from the origina
 
 ### Session 11
 
-Closed the Change Password gap flagged at the end of Session 10: added `useChangePassword.js` (`features/auth/hooks/`, next to its `authService.js` mutation, per established hook/service pairing convention) and `ChangePasswordForm.jsx` (`features/users/components/`, where it's actually displayed), wired into `ProfilePage.jsx`'s existing "Edit Profile" dialog as a separate section with its own submit — not merged into the email/fullName save, since it's a different mutation. **Not yet live-tested** — see Change Password subsection above for the outstanding checklist.
+Closed the Change Password gap flagged at the end of Session 10: added `useChangePassword.js` (`features/auth/hooks/`, next to its `authService.js` mutation, per established hook/service pairing convention) and `ChangePasswordForm.jsx` (`features/users/components/`, where it's actually displayed), wired into `ProfilePage.jsx`'s existing "Edit Profile" dialog as a separate section with its own submit — not merged into the email/fullName save, since it's a different mutation. Hit one setup snag: `ChangePasswordForm.jsx` hadn't actually been saved to disk after pasting, causing a Vite 500 "Failed to resolve import" error on `/profile` — re-saved and confirmed working, not a code bug. **Live-tested and confirmed fully working**: wrong current password, mismatched confirmation, and successful change all verified against the real backend.
 
 ### Next Update
 
