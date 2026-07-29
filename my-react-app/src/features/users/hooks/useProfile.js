@@ -7,7 +7,6 @@ import {
   deleteUser,
 } from "../services/userService";
 import { authKeys } from "../../../constants/queryKeys";
-import { clearTokens } from "../../../utils/tokenStorage";
 
 export function useProfile() {
   const queryClient = useQueryClient();
@@ -41,7 +40,6 @@ export function useProfile() {
     mutationFn: deleteUser,
     meta: { errorTitle: "Couldn't delete account" },
     onSuccess: () => {
-      clearTokens();
       queryClient.setQueryData(authKeys.me(), null);
     },
   });

@@ -1,7 +1,6 @@
 // src/context/AuthContext.jsx
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser, loginUser, logoutUser } from "../features/auth/services/authService";
-import { getAccessToken, setTokens, clearTokens } from "../utils/tokenStorage";
 import { authKeys } from "../constants/queryKeys";
 import { AuthContext } from "./AuthContextValue";
 
@@ -11,15 +10,9 @@ export function AuthProvider({ children }) {
   const { data: user = null, isLoading } = useQuery({
     queryKey: authKeys.me(),
     queryFn: async () => {
-      try {
-        const { data } = await getCurrentUser();
-        return data.data.userData;
-      } catch (err) {
-        clearTokens();
-        throw err;
-      }
+      const { data } = await getCurrentUser();
+      return data.data.userData;
     },
-    enabled: !!getAccessToken(),
     retry: false,
     staleTime: Infinity,
     meta: { skipGlobalErrorToast: true }, // matches old behavior: silent on failed session restore
@@ -29,7 +22,6 @@ export function AuthProvider({ children }) {
     mutationFn: loginUser,
     meta: { skipGlobalErrorToast: true }, // LoginPage already shows its own error UI
     onSuccess: ({ data }) => {
-      setTokens({ accessToken: data.data.accessToken, refreshToken: data.data.refreshToken });
       queryClient.setQueryData(authKeys.me(), data.data.userData);
     },
   });
@@ -37,7 +29,6 @@ export function AuthProvider({ children }) {
   const logoutMutation = useMutation({
     mutationFn: logoutUser,
     onSuccess: () => {
-      clearTokens();
       queryClient.setQueryData(authKeys.me(), null);
     },
   });

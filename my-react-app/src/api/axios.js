@@ -1,5 +1,4 @@
 import axios from "axios";
-import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "../utils/tokenStorage";
 
 const BASE_URL = "https://cloudlearner.duckdns.org:1124/api/v1";
 
@@ -7,6 +6,7 @@ const BASE_URL = "https://cloudlearner.duckdns.org:1124/api/v1";
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 5000, // bounds every request so it always settles, even if the network hangs
+  withCredentials: true,
 });
 
 // Separate plain instance for the refresh call itself,
@@ -14,7 +14,9 @@ const api = axios.create({
 const refreshClient = axios.create({
   baseURL: BASE_URL,
   timeout: 5000,
+  withCredentials: true,
 });
+
 
 // Request interceptor: attach access token to every outgoing request
 api.interceptors.request.use((config) => {
@@ -32,11 +34,6 @@ api.interceptors.request.use((config) => {
       },
     });
   }
-
-  const token = getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
   return config;
 });
 
@@ -44,8 +41,8 @@ api.interceptors.request.use((config) => {
 let isRefreshing = false;
 let pendingRequests = [];
 
-const resolvePending = (newToken) => {
-  pendingRequests.forEach((cb) => cb(newToken));
+const resolvePending = () => {
+  pendingRequests.forEach((cb) => cb());
   pendingRequests = [];
 };
 
@@ -57,35 +54,21 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = getRefreshToken();
-      if (!refreshToken) {
-        clearTokens();
-        return Promise.reject(error);
-      }
-
       if (isRefreshing) {
-        // Wait for the in-flight refresh to finish, then retry with new token
-        return new Promise((resolve, reject) => {
-          pendingRequests.push((newToken) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            resolve(api(originalRequest));
-          });
+        // Wait for the in-flight refresh to finish, then retry
+        return new Promise((resolve) => {
+          pendingRequests.push(() => resolve(api(originalRequest)));
         });
       }
 
       isRefreshing = true;
       try {
-        const { data } = await refreshClient.post("/user/refreshToken", { refreshToken });
-        const { accessToken, refreshToken: newRefreshToken } = data.data;
-        setTokens({ accessToken, refreshToken: newRefreshToken });
-        resolvePending(accessToken);
+        await refreshClient.post("/user/refreshToken");
+        resolvePending();
         isRefreshing = false;
-
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         isRefreshing = false;
-        clearTokens();
         return Promise.reject(refreshError);
       }
     }
