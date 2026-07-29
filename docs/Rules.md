@@ -20,7 +20,7 @@ Use `react-router-dom` v7 with `<Routes>`, `<Route>`, `useNavigate`, and `usePar
 
 ### Token Storage
 
-Use only the helper functions provided by `utils/tokenStorage.js`, such as `getAccessToken()`, `setTokens()`, and `clearTokens()`. Never access `localStorage` directly outside this utility.
+Auth tokens (`accessToken`, `refreshToken`) live in HttpOnly, Secure, SameSite=None cookies set by the backend — never in `localStorage`, `sessionStorage`, or any JS-readable storage. The frontend never reads or writes tokens directly. `api/axios.js`'s `withCredentials: true` is what makes the browser attach/receive these cookies automatically. `utils/tokenStorage.js` is dead code as of this migration — don't import from it in new code.
 
 ### Route Paths
 
@@ -62,7 +62,7 @@ Every backend endpoint that returns a `pagination` object (`getAllTweets`, `getM
 ## 2. What to Avoid
 
 - ❌ **Fetch API** — project standardized on Axios from Step 3 onward; don't mix the two.
-- ❌ **Direct `localStorage` calls outside `tokenStorage.js`** — breaks the single source of truth for auth state.
+- ❌ **Any `localStorage`/`sessionStorage` use for auth tokens** — tokens are HttpOnly cookies now; JS cannot and should not read/write them. Don't reintroduce `tokenStorage.js` usage.
 - ❌ **Class components** — functional components + hooks only, per the learning roadmap.
 - ❌ **Inline hardcoded API URLs** — always go through `api/axios.js`'s `baseURL`.
 - ❌ **Building UI for excluded endpoints** — no comments, no subscribe/unsubscribe, no watch history, no channel page (see PRD.md §3).

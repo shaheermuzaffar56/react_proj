@@ -50,7 +50,9 @@ Returns the created user.
 - **Auth:** No
 - **Content-Type:** `application/json`
 
-Returns: - `userData` - `accessToken` - `refreshToken`
+Returns: - `userData` (in JSON body)
+
+`accessToken` and `refreshToken` are issued as `HttpOnly; Secure; SameSite=None` cookies via `Set-Cookie` — not in the JSON body. Frontend requests must use `withCredentials: true` to send/receive them; nothing in the response body should be read for tokens.
 
 ---
 
@@ -64,7 +66,8 @@ Returns: - `userData` - `accessToken` - `refreshToken`
 ## Refresh Token
 
 - **POST** `/user/refreshToken`
-- Returns new access and refresh tokens.
+- No request body needed — the `refreshToken` cookie is sent automatically (`withCredentials: true`).
+- Returns new access and refresh tokens via fresh `Set-Cookie` headers (not JSON body).
 
 ---
 

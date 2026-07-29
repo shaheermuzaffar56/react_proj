@@ -23,15 +23,17 @@ Feature service (e.g. tweetService.js) — pure API call functions, unchanged
       ▼
 Shared Axios instance (api/axios.js)
       │
-      ├─ Request interceptor → attaches Bearer access token from tokenStorage
+      ├─ withCredentials: true → browser attaches HttpOnly accessToken/refreshToken
+      │  cookies automatically (Secure, SameSite=None). No token read/write in JS.
       │
       ▼
 Backend: https://cloudlearner.duckdns.org:1124/api/v1
       │
       ▼
-Response interceptor → on 401: calls /user/refreshToken once,
-                        stores new tokens, retries original request.
-                        If refresh also fails → clears tokens, request rejected.
+Response interceptor → on 401: calls /user/refreshToken once (cookie auto-attached,
+                        no body needed), backend issues fresh Set-Cookie, original
+                        request retried. If refresh also fails → request rejected
+                        (no local token to clear — cookies expire/clear server-side).
       │
       ▼
 Back up through service → QueryClient cache → hook
@@ -60,7 +62,9 @@ App.jsx → AppRouter.jsx
              ├─ MainLayout (Outlet wrapper — header/nav persist across pages)
              │     ├─ / and /feed → FeedPage (public tweet feed, infinite scroll)
              │     ├─ /tweets/:id (public, lazy-loaded)
-             │     └─ ProtectedRoute (checks token via tokenStorage)
+             │     └─ ProtectedRoute (checks isAuthenticated from AuthContext,
+             │           which reflects a live GET /user/me call — no local
+             │           token to check; session lives in HttpOnly cookies)
              │           ├─ /tweets/mine
              │           └─ /profile
              │
@@ -121,7 +125,9 @@ src/
 │                                   flattens paginated responses, shared by useTweetFeed.js and
 │                                   useReactorsList.js so the pagination logic isn't duplicated)
 ├── routes/                     → AppRouter.jsx, ProtectedRoute.jsx
-├── utils/                      → tokenStorage.js
+├── utils/                      → tokenStorage.js (unused as of the HttpOnly cookie
+│                                   migration — no longer imported anywhere; kept on
+│                                   disk but dead code, safe to delete)
 ├── constants/                  → routes.js (ROUTES + buildPath()), queryKeys.js (authKeys,
 │                                   tweetKeys factory functions — see Rules.md's "Query keys" rule)
 ├── pages/                      → non-feature-specific pages (e.g. TweetDetailPreview)
@@ -138,11 +144,11 @@ src/
 | Build tool             | Vite                                                                        | React 19 template                                                                                                                                                                                                                                                                                                     |
 | Framework              | React 19                                                                    | Functional components + hooks only                                                                                                                                                                                                                                                                                    |
 | Routing                | React Router DOM v7                                                         | Nested routes, lazy loading, protected routes                                                                                                                                                                                                                                                                         |
-| HTTP client            | Axios                                                                       | Interceptor-based auth + auto token refresh                                                                                                                                                                                                                                                                           |
+| HTTP client            | Axios                                                                       | Cookie-based auth (`withCredentials: true`) + interceptor-driven auto token refresh on 401; no manual `Authorization` header                                                                                                                                                                                          |
 | Server state / caching | `@tanstack/react-query` v5 (adopted ahead of schedule, originally Phase 12) | `useQuery`/`useMutation`/`useInfiniteQuery` own all server-derived data; QueryClient built via `lib/QueryProvider.jsx`, not module scope — see Rules.md                                                                                                                                                               |
 | Forms                  | React Hook Form                                                             | All form state                                                                                                                                                                                                                                                                                                        |
 | Validation             | Zod + @hookform/resolvers                                                   | Schema-based validation bridged into RHF                                                                                                                                                                                                                                                                              |
 | UI library             | MUI (@mui/material, @emotion/react, @emotion/styled, @mui/icons-material)   | Primary UI kit                                                                                                                                                                                                                                                                                                        |
 | State management       | Context API (current)                                                       | Covers client/UI state (auth session shape, error toasts). Redux Toolkit / Zustand only if Context proves insufficient for _client_ state — decision deferred to Step 11. Not a fallback for server state — that's TanStack Query's job now.                                                                          |
-| Token storage          | localStorage (via tokenStorage.js utility)                                  | Centralized, not scattered `localStorage.getItem` calls                                                                                                                                                                                                                                                               |
+| Token storage          | HttpOnly, Secure, SameSite=None cookies (backend-managed)                   | Frontend never reads/writes tokens directly — `axios.js` just sets `withCredentials: true` and lets the browser handle attaching/receiving cookies. `tokenStorage.js` is now dead code.                                                                                                                               |
 | Error notifications    | Context API (`ErrorToastContext`) + `useErrorToast()` hook                  | Global toast layer. Since the TanStack Query migration, the toast fires automatically via a centralized `QueryCache`/`MutationCache` `onError` (see `lib/queryClient.js`) — individual hooks no longer call `showError()` themselves. Local per-hook `error` state (for inline UI) is still hook-owned — see Rules.md |

@@ -23,6 +23,8 @@ Phase 3 scope (per `Phases.md`) is the shared HTTP infrastructure only — not f
 - `api/axios.js` — shared instance (default export `api`), `baseURL` set to `https://cloudlearner.duckdns.org:1124/api/v1`, request interceptor attaches Bearer token, response interceptor handles 401 → single refresh attempt via `/user/refreshToken` → retries original request → clears tokens and rejects if refresh fails. Includes pending-request queue to avoid duplicate refresh calls during concurrent 401s.
 - `utils/tokenStorage.js` — `getAccessToken`, `getRefreshToken`, `setTokens`, `clearTokens`, all via `localStorage` with prefixed keys (`cloudlearner_access_token`, `cloudlearner_refresh_token`).
 
+> **Superseded:** the backend switched to issuing `accessToken`/`refreshToken` as `HttpOnly; Secure; SameSite=None` cookies instead of (or alongside) the JSON body. The frontend was migrated to match — see the "HttpOnly cookie auth migration" session entry below. `tokenStorage.js` is now dead code and the Bearer-header attachment described above no longer happens.
+
 **Correctly out of scope for Phase 3 (not a gap):** `features/tweets/services/tweetService.js`, `features/users/services/userService.js`, `features/moderation/services/moderationService.js`, and their `index.js` barrels are still empty — expected, deferred to Phase 6–8 (tweets), Phase 9 (users), and Phase 10 (moderation) respectively. `features/auth/services/authService.js` was filled in Phase 5 — see below.
 
 ### Phase 4 — Routing ✅ Complete
@@ -225,6 +227,22 @@ Built Phase 9 (User Profile) in full, following the 6-step plan from the origina
 ### Session 11
 
 Closed the Change Password gap flagged at the end of Session 10: added `useChangePassword.js` (`features/auth/hooks/`, next to its `authService.js` mutation, per established hook/service pairing convention) and `ChangePasswordForm.jsx` (`features/users/components/`, where it's actually displayed), wired into `ProfilePage.jsx`'s existing "Edit Profile" dialog as a separate section with its own submit — not merged into the email/fullName save, since it's a different mutation. Hit one setup snag: `ChangePasswordForm.jsx` hadn't actually been saved to disk after pasting, causing a Vite 500 "Failed to resolve import" error on `/profile` — re-saved and confirmed working, not a code bug. **Live-tested and confirmed fully working**: wrong current password, mismatched confirmation, and successful change all verified against the real backend.
+
+### Session 12 — HttpOnly cookie auth migration
+
+Backend switched to issuing `accessToken`/`refreshToken` as `HttpOnly; Secure; SameSite=None` cookies (confirmed via a live `Set-Cookie` header sample) instead of relying on the frontend to store/attach them. Frontend migrated to match, in 5 steps:
+
+1. `api/axios.js` — added `withCredentials: true` to both the `api` and `refreshClient` instances, so the browser sends/receives auth cookies automatically.
+2. `features/users/hooks/useProfile.js` — removed the now-pointless `clearTokens()` call from the delete-account `onSuccess` (JS can't clear HttpOnly cookies anyway).
+3. `api/axios.js` request interceptor — removed manual `getAccessToken()` read and `Authorization: Bearer` header attachment entirely; the offline-check logic above it is untouched.
+4. `api/axios.js` response interceptor — refresh call no longer reads/sends a refresh token manually (cookie auto-attached) or manually stores the new tokens (new `Set-Cookie` handled by the browser). `resolvePending` no longer passes a token through to queued callbacks — there's nothing to pass anymore.
+5. `context/AuthContext.jsx` — removed the `tokenStorage` import and all `setTokens`/`clearTokens` calls. Critically, removed `enabled: !!getAccessToken()` on the `/user/me` query — since JS can no longer check for a token's existence (HttpOnly), the query now always runs on mount; a missing/expired session just results in a natural 401 → failed refresh → `user` stays `null`, handled the same as any other query failure.
+
+`utils/tokenStorage.js` is fully unused now (no imports anywhere in `src/`) — left on disk as dead code rather than deleted, at user's discretion.
+
+**Verified live, end-to-end, by the user directly in DevTools:** login → cookies visible under Application → Cookies (not Local Storage) → single 401 → single refresh call → retry succeeds (confirmed via Network tab screenshots, `axios.js:78`/`axios.js:85` as the refresh/retry call sites) → new tab / page reload both correctly restore the session via the persistent cookie jar (not tied to any single tab's JS memory, unlike the old `localStorage` approach which was also tab-independent but is now removed regardless).
+
+**Docs updated to match:** `Architecture.md` (auth flow diagram, `ProtectedRoute` description, folder tree, tech-stack table), `Rules.md` (Token Storage rule, "what to avoid" bullet), `API.md` (Login/Refresh Token endpoints now note cookie-based token delivery instead of JSON body).
 
 ### Next Update
 
