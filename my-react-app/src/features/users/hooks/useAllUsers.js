@@ -4,15 +4,15 @@ import { getAllUsers } from "../services/userService";
 import { userKeys } from "../../../constants/queryKeys";
 
 export function useAllUsers() {
-  const { items, isLoading, error, hasMore, loadMore } = useInfiniteListQuery({
+  const { items, total, isLoading, error, hasMore, loadMore } = useInfiniteListQuery({
     queryKey: userKeys.list(),
     queryFn: async (page, limit) => {
       const res = await getAllUsers({ page, limit });
       const { users, pagination } = res.data.data;
-      return { items: users, totalPages: pagination.totalPages };
+      return { items: users, totalPages: pagination.totalPages, totalResults: pagination.totalResults };
     },
     meta: { errorTitle: "Couldn't load users" },
   });
 
-  return { users: items, isLoading, error, hasMore, loadMore };
+  return { users: items, total, isLoading, error, hasMore, loadMore };
 }

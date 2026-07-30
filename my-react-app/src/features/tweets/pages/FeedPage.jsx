@@ -19,7 +19,6 @@ export default function FeedPage() {
 
   const { tweets, isLoading, error, hasMore, loadMore } = useTweetFeed({ search, status, sortBy });
 
-  // Sentinel element — when it becomes visible, load the next page
   const sentinelRef = useRef(null);
 
   const observerCallback = useCallback(
@@ -44,7 +43,21 @@ export default function FeedPage() {
     <Box sx={{ maxWidth: 600, mx: "auto", mt: 4 }}>
       <Typography variant="h5" sx={{ mb: 2 }}>Feed</Typography>
 
-      <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+      <Box
+        sx={{
+          display: "flex",
+          gap: 2,
+          mb: 3,
+          flexWrap: "wrap",
+          position: "sticky",
+          top: 64, // matches TopBar's fixed height in theme.js
+          bgcolor: "background.default",
+          zIndex: 1,
+          py: 1.5,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+        }}
+      >
         <TextField
           label="Search"
           size="small"
@@ -81,7 +94,6 @@ export default function FeedPage() {
       {/* Reused unchanged from Phase 6 — no onEdit/onDelete passed, so those buttons won't render */}
       <TweetList tweets={tweets} isLoading={tweets.length === 0 && isLoading} error={error} />
 
-      {/* Sentinel — invisible, just triggers loadMore() when scrolled into view */}
       <div ref={sentinelRef} style={{ height: 1 }} />
 
       {isLoading && tweets.length > 0 && (
@@ -89,7 +101,6 @@ export default function FeedPage() {
           <CircularProgress size={24} />
         </Box>
       )}
-
       {!hasMore && tweets.length > 0 && (
         <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 2 }}>
           You've reached the end.

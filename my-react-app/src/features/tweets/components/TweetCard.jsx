@@ -161,7 +161,7 @@ export default function TweetCard({ tweet, onEdit, onDelete }) {
               component="img"
               image={image}
               alt={title}
-              sx={{ maxHeight: 320, objectFit: "cover" }}
+              sx={{ maxHeight: 250, objectFit: "cover" }}
             />
           </Box>
         )}

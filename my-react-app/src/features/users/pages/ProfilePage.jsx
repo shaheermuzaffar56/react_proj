@@ -75,7 +75,7 @@ export default function ProfilePage() {
             borderColor: "error.main",
             borderRadius: 2,
             p: 2,
-            bgcolor: "error.lighter",
+            bgcolor: "#FFEBEF",
           }}
         >
           <Typography variant="subtitle2" color="error" sx={{ fontWeight: 700, mb: 0.5 }}>

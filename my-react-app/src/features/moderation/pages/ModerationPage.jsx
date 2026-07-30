@@ -30,6 +30,11 @@ const DISABLED_OPTIONS = [
   { value: "false", label: "Active only" },
 ];
 
+// TopBar is 64px (theme.js). Tabs below it is MUI's default height (~48px,
+// no MuiTabs override in theme.js). Filter bars stick under both: 64 + 48 = 112.
+const TOPBAR_HEIGHT = 64;
+const TABS_HEIGHT = 48;
+
 // Shared IntersectionObserver sentinel — same pattern as FeedPage.jsx / UsersListPage.jsx
 function useInfiniteScrollSentinel(loadMore) {
   const sentinelRef = useRef(null);
@@ -50,6 +55,21 @@ function useInfiniteScrollSentinel(loadMore) {
   return sentinelRef;
 }
 
+// Shared sticky styling for the filter bars — sits just under the sticky Tabs bar
+const stickyFilterBarSx = {
+  display: "flex",
+  gap: 2,
+  mb: 3,
+  flexWrap: "wrap",
+  position: "sticky",
+  top: TOPBAR_HEIGHT + TABS_HEIGHT,
+  bgcolor: "background.default",
+  zIndex: 1,
+  py: 1.5,
+  borderBottom: "1px solid",
+  borderColor: "divider",
+};
+
 function TweetsPanel() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -67,7 +87,7 @@ function TweetsPanel() {
 
   return (
     <Box>
-      <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+      <Box sx={stickyFilterBarSx}>
         <TextField
           label="Search"
           size="small"
@@ -149,7 +169,7 @@ function UsersPanel() {
 
   return (
     <Box>
-      <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+      <Box sx={stickyFilterBarSx}>
         <TextField label="Username" size="small" value={username} onChange={(e) => setUsername(e.target.value)} sx={{ minWidth: 140 }} />
         <TextField label="Full name" size="small" value={fullName} onChange={(e) => setFullName(e.target.value)} sx={{ minWidth: 140 }} />
         <TextField select label="Role" size="small" value={role} onChange={(e) => setRole(e.target.value)} sx={{ minWidth: 140 }}>
@@ -210,7 +230,19 @@ export default function ModerationPage() {
     <Box sx={{ maxWidth: 700, mx: "auto", mt: 4 }}>
       <Typography variant="h5" sx={{ mb: 2 }}>Moderation</Typography>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+      <Tabs
+        value={tab}
+        onChange={(_, v) => setTab(v)}
+        sx={{
+          mb: 3,
+          position: "sticky",
+          top: TOPBAR_HEIGHT,
+          bgcolor: "background.default",
+          zIndex: 2, // above the filter bar underneath it
+          borderBottom: "1px solid",
+          borderColor: "divider",
+        }}
+      >
         <Tab label="Tweets" value="tweets" />
         <Tab label="Users" value="users" />
       </Tabs>
