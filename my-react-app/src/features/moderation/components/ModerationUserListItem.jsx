@@ -15,12 +15,20 @@ import {
 import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import { useAuth } from "../../../features/auth/hooks/useAuth";
 
 const ROLE_OPTIONS = ["user", "moderator", "admin"];
 
-// onToggleDisabled(id, nextIsDisabled) / onRoleChange(id, role) / onDeleteRequest(user)
-export default function ModerationUserListItem({ user, onToggleDisabled, onRoleChange, onDeleteRequest, isPaused }) {
+// onToggleDisabled(id, nextIsDisabled) / onRoleChange(id, role) / onDeleteRequest(user) / onEditRequest(user)
+export default function ModerationUserListItem({
+  user,
+  onToggleDisabled,
+  onRoleChange,
+  onDeleteRequest,
+  onEditRequest,
+  isPaused,
+}) {
   const { user: currentUser } = useAuth();
   const isAdmin = currentUser?.role === "admin";
   const [roleDraft, setRoleDraft] = useState(user.role);
@@ -69,6 +77,18 @@ export default function ModerationUserListItem({ user, onToggleDisabled, onRoleC
         >
           {user.isDisabled ? "Enable" : "Disable"}
         </Button>
+
+        {/* Edit fullName/userName — admin only, per verified API behavior */}
+        {isAdmin && (
+          <IconButton
+            size="small"
+            aria-label="edit user"
+            disabled={isPaused}
+            onClick={() => onEditRequest(user)}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+        )}
 
         {/* Delete — admin only, per PRD.md §2.6 */}
         {isAdmin && (

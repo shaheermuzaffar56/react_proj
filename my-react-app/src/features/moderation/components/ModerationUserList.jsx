@@ -10,6 +10,7 @@ export default function ModerationUserList({
   onToggleDisabled,
   onRoleChange,
   onDeleteRequest,
+  onEditRequest,
   isPaused,
 }) {
   if (isLoading) {
@@ -41,6 +42,7 @@ export default function ModerationUserList({
           onToggleDisabled={onToggleDisabled}
           onRoleChange={onRoleChange}
           onDeleteRequest={onDeleteRequest}
+          onEditRequest={onEditRequest}
           isPaused={isPaused}
         />
       ))}

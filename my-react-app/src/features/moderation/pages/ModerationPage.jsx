@@ -15,6 +15,7 @@ import { useModerationActions } from "../hooks/useModerationActions";
 import ModerationTweetList from "../components/ModerationTweetList";
 import ModerationUserList from "../components/ModerationUserList";
 import DeleteUserDialog from "../components/DeleteUserDialog";
+import EditUserDialog from "../components/EditUserDialog";
 
 const STATUS_OPTIONS = ["", "draft", "awaiting_approval", "approved", "published", "rejected", "archived"];
 const SENSITIVE_OPTIONS = [
@@ -130,6 +131,7 @@ function UsersPanel() {
   const [role, setRole] = useState("");
   const [isDisabled, setIsDisabled] = useState("");
   const [userToDelete, setUserToDelete] = useState(null);
+  const [userToEdit, setUserToEdit] = useState(null);
 
   const filters = {
     ...(username && { username }),
@@ -148,40 +150,14 @@ function UsersPanel() {
   return (
     <Box>
       <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
-        <TextField
-          label="Username"
-          size="small"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          sx={{ minWidth: 140 }}
-        />
-        <TextField
-          label="Full name"
-          size="small"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          sx={{ minWidth: 140 }}
-        />
-        <TextField
-          select
-          label="Role"
-          size="small"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          sx={{ minWidth: 140 }}
-        >
+        <TextField label="Username" size="small" value={username} onChange={(e) => setUsername(e.target.value)} sx={{ minWidth: 140 }} />
+        <TextField label="Full name" size="small" value={fullName} onChange={(e) => setFullName(e.target.value)} sx={{ minWidth: 140 }} />
+        <TextField select label="Role" size="small" value={role} onChange={(e) => setRole(e.target.value)} sx={{ minWidth: 140 }}>
           {ROLE_OPTIONS.map((r) => (
             <MenuItem key={r} value={r}>{r || "All"}</MenuItem>
           ))}
         </TextField>
-        <TextField
-          select
-          label="Status"
-          size="small"
-          value={isDisabled}
-          onChange={(e) => setIsDisabled(e.target.value)}
-          sx={{ minWidth: 140 }}
-        >
+        <TextField select label="Status" size="small" value={isDisabled} onChange={(e) => setIsDisabled(e.target.value)} sx={{ minWidth: 140 }}>
           {DISABLED_OPTIONS.map((opt) => (
             <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
           ))}
@@ -195,6 +171,7 @@ function UsersPanel() {
         onToggleDisabled={handleToggleDisabled}
         onRoleChange={handleRoleChange}
         onDeleteRequest={setUserToDelete}
+        onEditRequest={setUserToEdit}
         isPaused={isPaused}
       />
 
@@ -215,6 +192,12 @@ function UsersPanel() {
         user={userToDelete}
         onClose={() => setUserToDelete(null)}
         onConfirm={deleteUser}
+      />
+
+      <EditUserDialog
+        user={userToEdit}
+        onClose={() => setUserToEdit(null)}
+        onConfirm={moderateUser}
       />
     </Box>
   );

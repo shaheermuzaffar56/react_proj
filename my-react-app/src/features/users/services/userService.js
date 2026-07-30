@@ -1,7 +1,7 @@
 // src/features/users/services/userService.js
 import api from "../../../api/axios";
 
-// PATCH /user/updateUser — JSON { email, fullName }
+// PATCH /user/updateUser — JSON { fullName }
 // Response: { data: { userData: <User> } }
 // Note: some accounts return 403 "This account is protected and cannot be modified" —
 // no special-case handling needed, flows through normal error extraction.

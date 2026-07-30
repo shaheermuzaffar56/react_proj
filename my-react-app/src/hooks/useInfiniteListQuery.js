@@ -32,6 +32,7 @@ export function useInfiniteListQuery({
 
   return {
     items,
+    pages: data?.pages ?? [],
     isLoading: isPending || isFetchingNextPage,
     error: error ? (error.response?.data?.message || "Something went wrong. Please try again.") : null,
     hasMore: !!hasNextPage,

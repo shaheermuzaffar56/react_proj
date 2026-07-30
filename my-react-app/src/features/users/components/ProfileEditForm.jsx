@@ -6,7 +6,6 @@ import { z } from "zod";
 import { TextField, Button, Box, Alert } from "@mui/material";
 
 const profileSchema = z.object({
-  email: z.string().email("Enter a valid email"),
   fullName: z.string().min(1, "Full name is required"),
 });
 
@@ -23,7 +22,6 @@ export default function ProfileEditForm({ user, onSubmit, onDone, isPaused }) {
   } = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      email: user?.email ?? "",
       fullName: user?.fullName ?? "",
     },
   });
@@ -41,9 +39,6 @@ export default function ProfileEditForm({ user, onSubmit, onDone, isPaused }) {
   return (
     <Box component="form" onSubmit={handleSubmit(handleFormSubmit)} sx={{ maxWidth: 480 }}>
       {serverError && <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>}
-
-      <TextField label="Email" fullWidth margin="normal" {...register("email")}
-        error={!!errors.email} helperText={errors.email?.message} />
 
       <TextField label="Full Name" fullWidth margin="normal" {...register("fullName")}
         error={!!errors.fullName} helperText={errors.fullName?.message} />
