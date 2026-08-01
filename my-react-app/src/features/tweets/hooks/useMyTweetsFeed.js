@@ -3,11 +3,11 @@ import { getMyTweets } from "../services/tweetService";
 import { useInfiniteListQuery } from "../../../hooks/useInfiniteListQuery";
 import { tweetKeys } from "../../../constants/queryKeys";
 
-export function useMyTweetsFeed() {
+export function useMyTweetsFeed(status) {
   const { items, pages, isLoading, error, hasMore, loadMore } = useInfiniteListQuery({
-    queryKey: tweetKeys.myTweets(),
+    queryKey: tweetKeys.myTweets(status),
     queryFn: async (page, limit) => {
-      const res = await getMyTweets({ page, limit });
+      const res = await getMyTweets({ page, limit, ...(status && { status }) });
       const { tweets, pagination } = res.data.data;
       return { items: tweets, totalPages: pagination.totalPages, totalCount: pagination.totalCount };
     },

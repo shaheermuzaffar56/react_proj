@@ -1,15 +1,20 @@
 // src/features/tweets/pages/MyTweetsPage.jsx
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, CircularProgress } from "@mui/material";
+import { Box, Typography, Button, Chip, Stack, Dialog, DialogTitle, DialogContent, CircularProgress } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useTweets } from "../hooks/useTweets";
 import { useMyTweetsFeed } from "../hooks/useMyTweetsFeed";
-import TweetList from "../components/TweetList";
+import { useMyTweetsCounts, STATUS_PILLS } from "../hooks/useMyTweetsCounts";
+import MyTweetList from "../components/MyTweetList";
 import TweetForm from "../components/TweetForm";
 import DeleteTweetDialog from "../components/DeleteTweetDialog";
 
 export default function MyTweetsPage() {
-  const { tweets, isLoading, error, hasMore, loadMore } = useMyTweetsFeed();
+  const [statusFilter, setStatusFilter] = useState("all");
+  const { tweets, isLoading, error, hasMore, loadMore } = useMyTweetsFeed(
+    statusFilter === "all" ? undefined : statusFilter
+  );
+  const { counts } = useMyTweetsCounts();
   const { isPaused, create, update, remove } = useTweets();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -31,7 +36,6 @@ export default function MyTweetsPage() {
     setEditingTweet(null);
   };
 
-  // Same IntersectionObserver sentinel pattern as UsersListPage.jsx / FeedPage.jsx
   const sentinelRef = useRef(null);
   const observerCallback = useCallback(
     (entries) => {
@@ -49,18 +53,37 @@ export default function MyTweetsPage() {
   }, [observerCallback]);
 
   return (
-    <Box sx={{ maxWidth: 600, mx: "auto", mt: 4 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-        <Typography variant="h5">My Tweets</Typography>
+    <Box sx={{ maxWidth: 700, mx: "auto", mt: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2, gap: 2, flexWrap: "wrap" }}>
+        <Box>
+          <Typography variant="h5">My Tweets</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {counts.all} post{counts.all === 1 ? "" : "s"} total
+          </Typography>
+        </Box>
         <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
           New Tweet
         </Button>
       </Box>
 
-      <TweetList
+      <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: "wrap", rowGap: 1 }}>
+        {STATUS_PILLS.map(({ value, label }) => (
+          <Chip
+            key={value}
+            label={`${label}  ${counts[value] ?? 0}`}
+            onClick={() => setStatusFilter(value)}
+            color={statusFilter === value ? "primary" : "default"}
+            variant={statusFilter === value ? "filled" : "outlined"}
+            sx={{ fontWeight: statusFilter === value ? 600 : 500 }}
+          />
+        ))}
+      </Stack>
+
+      <MyTweetList
         tweets={tweets}
         isLoading={tweets.length === 0 && isLoading}
         error={error}
+        statusFilter={statusFilter}
         onEdit={openEditForm}
         onDelete={(id) => setDeletingTweet(tweets.find((t) => t._id === id))}
       />

@@ -7,7 +7,7 @@ export const authKeys = {
 export const tweetKeys = {
   all: ["tweets"],
   feed: (filters) => [...tweetKeys.all, "feed", filters],
-  myTweets: () => [...tweetKeys.all, "my"],
+  myTweets: (status) => [...tweetKeys.all, "my", status ?? "all"],
   reactors: (tweetId, type) => [...tweetKeys.all, tweetId, type],
 };
 
