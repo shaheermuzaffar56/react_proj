@@ -1,7 +1,8 @@
 // src/features/tweets/pages/MyTweetsPage.jsx
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Box, Typography, Button, Chip, Stack, Dialog, DialogTitle, DialogContent, CircularProgress } from "@mui/material";
+import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, CircularProgress } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import PageHeader, { TOPBAR_HEIGHT } from "../../../components/PageHeader";
 import { useTweets } from "../hooks/useTweets";
 import { useMyTweetsFeed } from "../hooks/useMyTweetsFeed";
 import { useMyTweetsCounts, STATUS_PILLS } from "../hooks/useMyTweetsCounts";
@@ -10,6 +11,7 @@ import TweetForm from "../components/TweetForm";
 import DeleteTweetDialog from "../components/DeleteTweetDialog";
 
 export default function MyTweetsPage() {
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const { tweets, isLoading, error, hasMore, loadMore } = useMyTweetsFeed(
     statusFilter === "all" ? undefined : statusFilter
@@ -20,6 +22,18 @@ export default function MyTweetsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTweet, setEditingTweet] = useState(null);
   const [deletingTweet, setDeletingTweet] = useState(null);
+
+  // Client-side only — getMyTweets has no `search` param, so this filters
+  // whatever's currently loaded via infinite scroll, same caveat as
+  // UsersListPage.jsx's search. Revisit if the backend adds server search.
+  const q = search.trim().toLowerCase();
+  const filteredTweets = q
+    ? tweets.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          t.description.toLowerCase().includes(q)
+      )
+    : tweets;
 
   const openCreateForm = () => {
     setEditingTweet(null);
@@ -54,33 +68,28 @@ export default function MyTweetsPage() {
 
   return (
     <Box sx={{ maxWidth: 700, mx: "auto", mt: 4 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2, gap: 2, flexWrap: "wrap" }}>
-        <Box>
-          <Typography variant="h5">My Tweets</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {counts.all} post{counts.all === 1 ? "" : "s"} total
-          </Typography>
-        </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-          New Tweet
-        </Button>
-      </Box>
-
-      <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: "wrap", rowGap: 1 }}>
-        {STATUS_PILLS.map(({ value, label }) => (
-          <Chip
-            key={value}
-            label={`${label}  ${counts[value] ?? 0}`}
-            onClick={() => setStatusFilter(value)}
-            color={statusFilter === value ? "primary" : "default"}
-            variant={statusFilter === value ? "filled" : "outlined"}
-            sx={{ fontWeight: statusFilter === value ? 600 : 500 }}
-          />
-        ))}
-      </Stack>
+      <PageHeader
+        title="My Tweets"
+        subtitle={`${counts.all} post${counts.all === 1 ? "" : "s"} total`}
+        action={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+            New Tweet
+          </Button>
+        }
+        search={{ value: search, onChange: setSearch, placeholder: "Search your tweets…" }}
+        pillGroups={[{
+          options: STATUS_PILLS.map(({ value, label }) => ({
+            value,
+            label: `${label}  ${counts[value] ?? 0}`,
+          })),
+          value: statusFilter,
+          onChange: setStatusFilter,
+        }]}
+        stickyTop={TOPBAR_HEIGHT}
+      />
 
       <MyTweetList
-        tweets={tweets}
+        tweets={filteredTweets}
         isLoading={tweets.length === 0 && isLoading}
         error={error}
         statusFilter={statusFilter}

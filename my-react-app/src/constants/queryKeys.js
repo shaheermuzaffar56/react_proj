@@ -22,3 +22,9 @@ export const moderationKeys = {
   tweets: (filters) => [...moderationKeys.all, "tweets", filters],
   users: (filters) => [...moderationKeys.all, "users", filters],
 };
+
+export const userKeys = {
+  all: ["users"],
+  detail: (id) => [...userKeys.all, "detail", id],
+  list: (filters) => [...userKeys.all, "list", filters],
+};

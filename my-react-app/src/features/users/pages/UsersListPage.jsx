@@ -1,15 +1,27 @@
 // src/features/users/pages/UsersListPage.jsx
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Box, Typography, CircularProgress, Alert, TextField, InputAdornment } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import { Box, CircularProgress, Alert } from "@mui/material";
+import PageHeader, { TOPBAR_HEIGHT } from "../../../components/PageHeader";
+import { useAuth } from "../../auth/hooks/useAuth";
 import { useAllUsers } from "../hooks/useAllUsers";
 import UserListItem from "../components/UserListItem";
 
-export default function UsersListPage() {
-  const { users, total, isLoading, error, hasMore, loadMore } = useAllUsers();
-  const [search, setSearch] = useState("");
+const ROLE_PILLS = [
+  { value: "", label: "All" },
+  { value: "user", label: "User" },
+  { value: "moderator", label: "Moderator" },
+  { value: "admin", label: "Admin" },
+];
 
-  // NOTE: client-side only — /user/allUsers has no `search` param, and users
+export default function UsersListPage() {
+  const { user } = useAuth();
+  const canFilterByRole = ["admin", "moderator"].includes(user?.role);
+
+  const [search, setSearch] = useState("");
+  const [role, setRole] = useState("");
+  const { users, total, isLoading, error, hasMore, loadMore } = useAllUsers(canFilterByRole ? role : undefined);
+
+  // Client-side only — /user/allUsers has no `search` param, and users
   // arrive via infinite scroll, so this filters what's currently loaded,
   // not the full user base. Revisit if/when the backend adds server search.
   const q = search.trim().toLowerCase();
@@ -43,43 +55,18 @@ export default function UsersListPage() {
 
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, px: 2.5 }}>
-      <Box sx={{ mb: 2.5 }}>
-        <Typography variant="h5" sx={{ mb: 0.5 }}>
-          Users
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {total} member{total === 1 ? "" : "s"} in the community
-        </Typography>
-      </Box>
-
-      <TextField
-        fullWidth
-        placeholder="Search by name or username…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{
-          mb: 2.5,
-          position: "sticky",
-          top: 64, // matches TopBar's fixed height in theme.js
-          bgcolor: "background.default",
-          zIndex: 1,
-          py: 1,
-        }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon fontSize="small" color="disabled" />
-            </InputAdornment>
-          ),
-        }}
+      <PageHeader
+        title="Users"
+        subtitle={`${total} member${total === 1 ? "" : "s"} in the community`}
+        search={{ value: search, onChange: setSearch, placeholder: "Search by name or username…" }}
+        pillGroups={canFilterByRole ? [{ options: ROLE_PILLS, value: role, onChange: setRole }] : []}
+        stickyTop={TOPBAR_HEIGHT}
       />
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {filtered.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 6 }}>
-          No users found
-        </Typography>
+        <Box sx={{ textAlign: "center", py: 6, color: "text.secondary" }}>No users found</Box>
       ) : (
         <Box
           sx={{
@@ -103,9 +90,9 @@ export default function UsersListPage() {
       )}
 
       {!hasMore && filtered.length > 0 && !q && (
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 2 }}>
+        <Box sx={{ textAlign: "center", py: 2, color: "text.secondary" }}>
           All {total} member{total === 1 ? "" : "s"} shown ✓
-        </Typography>
+        </Box>
       )}
     </Box>
   );

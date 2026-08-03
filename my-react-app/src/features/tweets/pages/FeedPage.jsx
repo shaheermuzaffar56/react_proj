@@ -1,10 +1,13 @@
 // src/features/tweets/pages/FeedPage.jsx
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Box, Typography, TextField, MenuItem, CircularProgress } from "@mui/material";
+import { Box, Button, Dialog, DialogTitle, DialogContent, CircularProgress, Typography } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import PageHeader, { TOPBAR_HEIGHT } from "../../../components/PageHeader";
 import { useTweetFeed } from "../hooks/useTweetFeed";
+import { useTweets } from "../hooks/useTweets";
 import TweetList from "../components/TweetList";
+import TweetForm from "../components/TweetForm";
 
-const STATUS_OPTIONS = ["", "published", "draft", "awaiting_approval", "approved", "rejected", "archived"];
 const SORT_OPTIONS = [
   { value: "-createdAt", label: "Newest first" },
   { value: "createdAt", label: "Oldest first" },
@@ -14,10 +17,11 @@ const SORT_OPTIONS = [
 
 export default function FeedPage() {
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
   const [sortBy, setSortBy] = useState("-createdAt");
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
-  const { tweets, isLoading, error, hasMore, loadMore } = useTweetFeed({ search, status, sortBy });
+  const { tweets, isLoading, error, hasMore, loadMore } = useTweetFeed({ search, sortBy });
+  const { isPaused, create } = useTweets();
 
   const sentinelRef = useRef(null);
 
@@ -41,55 +45,17 @@ export default function FeedPage() {
 
   return (
     <Box sx={{ maxWidth: 600, mx: "auto", mt: 4 }}>
-      <Typography variant="h5" sx={{ mb: 2 }}>Feed</Typography>
-
-      <Box
-        sx={{
-          display: "flex",
-          gap: 2,
-          mb: 3,
-          flexWrap: "wrap",
-          position: "sticky",
-          top: 64, // matches TopBar's fixed height in theme.js
-          bgcolor: "background.default",
-          zIndex: 1,
-          py: 1.5,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <TextField
-          label="Search"
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{ flex: 1, minWidth: 160 }}
-        />
-        <TextField
-          select
-          label="Status"
-          size="small"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          sx={{ minWidth: 140 }}
-        >
-          {STATUS_OPTIONS.map((s) => (
-            <MenuItem key={s} value={s}>{s || "All"}</MenuItem>
-          ))}
-        </TextField>
-        <TextField
-          select
-          label="Sort"
-          size="small"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          sx={{ minWidth: 160 }}
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-          ))}
-        </TextField>
-      </Box>
+      <PageHeader
+        title="Feed"
+        action={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsFormOpen(true)}>
+            Create Tweet
+          </Button>
+        }
+        search={{ value: search, onChange: setSearch, placeholder: "Search tweets…" }}
+        pillGroups={[{ options: SORT_OPTIONS, value: sortBy, onChange: setSortBy }]}
+        stickyTop={TOPBAR_HEIGHT}
+      />
 
       {/* Reused unchanged from Phase 6 — no onEdit/onDelete passed, so those buttons won't render */}
       <TweetList tweets={tweets} isLoading={tweets.length === 0 && isLoading} error={error} />
@@ -106,6 +72,18 @@ export default function FeedPage() {
           You've reached the end.
         </Typography>
       )}
+
+      <Dialog open={isFormOpen} onClose={() => setIsFormOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Create Tweet</DialogTitle>
+        <DialogContent>
+          <TweetForm
+            tweet={null}
+            onSubmit={create}
+            onDone={() => setIsFormOpen(false)}
+            isPaused={isPaused}
+          />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }
